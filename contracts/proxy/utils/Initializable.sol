@@ -58,11 +58,13 @@ abstract contract Initializable {
     /**
      * @dev Indicates that the contract has been initialized.
      * @custom:oz-retyped-from bool
+     * 合约是否初始化
      */
     uint8 private _initialized;
 
     /**
      * @dev Indicates that the contract is in the process of being initialized.
+     * 是否正在初始化的流程
      */
     bool private _initializing;
 
@@ -74,19 +76,24 @@ abstract contract Initializable {
     /**
      * @dev A modifier that defines a protected initializer function that can be invoked at most once. In its scope,
      * `onlyInitializing` functions can be used to initialize parent contracts. Equivalent to `reinitializer(1)`.
+     * 控制每个合约只需要初始化一次
      */
     modifier initializer() {
         bool isTopLevelCall = !_initializing;
+        //需要合约没有被初始化
         require(
             (isTopLevelCall && _initialized < 1) || (!AddressUpgradeable.isContract(address(this)) && _initialized == 1),
             "Initializable: contract is already initialized"
         );
+        //已初始化
         _initialized = 1;
         if (isTopLevelCall) {
+            //正在初始化
             _initializing = true;
         }
         _;
         if (isTopLevelCall) {
+            //初始化结束
             _initializing = false;
             emit Initialized(1);
         }
@@ -100,7 +107,7 @@ abstract contract Initializable {
      * `initializer` is equivalent to `reinitializer(1)`, so a reinitializer may be used after the original
      * initialization step. This is essential to configure modules that are added through upgrades and that require
      * initialization.
-     *
+     * 重新初始化，更新版本
      * Note that versions can jump in increments greater than 1; this implies that if multiple reinitializers coexist in
      * a contract, executing them in the right order is up to the developer or operator.
      */
@@ -116,6 +123,7 @@ abstract contract Initializable {
     /**
      * @dev Modifier to protect an initialization function so that it can only be invoked by functions with the
      * {initializer} and {reinitializer} modifiers, directly or indirectly.
+     正在初始化中，检查
      */
     modifier onlyInitializing() {
         require(_initializing, "Initializable: contract is not initializing");
@@ -127,6 +135,8 @@ abstract contract Initializable {
      * Calling this in the constructor of a contract will prevent that contract from being initialized or reinitialized
      * to any version. It is recommended to use this to lock implementation contracts that are designed to be called
      * through proxies.
+     锁住合约，阻止任何初始化。此不能作为初始化调用的的一部分。在合约构造中时调用此方法，将会阻止合约初始化，和重新初始化到任何版本。
+     强烈建议，通过调用调用代理设计，锁住合约的实现
      */
     function _disableInitializers() internal virtual {
         require(!_initializing, "Initializable: contract is initializing");

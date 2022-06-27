@@ -11,6 +11,7 @@ library StringsUpgradeable {
     uint8 private constant _ADDRESS_LENGTH = 20;
 
     /**
+    uint256到ASCII码字符串转换
      * @dev Converts a `uint256` to its ASCII `string` decimal representation.
      */
     function toString(uint256 value) internal pure returns (string memory) {
@@ -37,6 +38,7 @@ library StringsUpgradeable {
 
     /**
      * @dev Converts a `uint256` to its ASCII `string` hexadecimal representation.
+      16机制转换
      */
     function toHexString(uint256 value) internal pure returns (string memory) {
         if (value == 0) {
@@ -52,6 +54,7 @@ library StringsUpgradeable {
     }
 
     /**
+    16机制转换
      * @dev Converts a `uint256` to its ASCII `string` hexadecimal representation with fixed length.
      */
     function toHexString(uint256 value, uint256 length) internal pure returns (string memory) {

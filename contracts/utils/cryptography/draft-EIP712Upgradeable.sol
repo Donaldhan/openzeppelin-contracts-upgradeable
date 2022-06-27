@@ -24,25 +24,27 @@ import "../../proxy/utils/Initializable.sol";
  * https://docs.metamask.io/guide/signing-data.html[`eth_signTypedDataV4` in MetaMask].
  *
  * _Available since v3.4._
- *
+ * [科普 | 一个示例解释EIP-712到底是什么](https://www.8btc.com/article/6669785)   
+ * [EIP-712（一个对结构化数据哈希和签名的标准）](https://zhuanlan.zhihu.com/p/40596830) 
  * @custom:storage-size 52
  */
 abstract contract EIP712Upgradeable is Initializable {
     /* solhint-disable var-name-mixedcase */
-    bytes32 private _HASHED_NAME;
-    bytes32 private _HASHED_VERSION;
+    bytes32 private _HASHED_NAME; // 域名hash
+    bytes32 private _HASHED_VERSION;//版本hash
+    //合约类型hash
     bytes32 private constant _TYPE_HASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
     /* solhint-enable var-name-mixedcase */
 
     /**
      * @dev Initializes the domain separator and parameter caches.
-     *
+     * 初始化域名分割符合参数缓存
      * The meaning of `name` and `version` is specified in
      * https://eips.ethereum.org/EIPS/eip-712#definition-of-domainseparator[EIP 712]:
      *
-     * - `name`: the user readable name of the signing domain, i.e. the name of the DApp or the protocol.
-     * - `version`: the current major version of the signing domain.
+     * - `name`: the user readable name of the signing domain, i.e. the name of the DApp or the protocol. 可读的签名域名name
+     * - `version`: the current major version of the signing domain. 当前签名的主版本
      *
      * NOTE: These parameters cannot be changed except through a xref:learn::upgrading-smart-contracts.adoc[smart
      * contract upgrade].
@@ -50,7 +52,9 @@ abstract contract EIP712Upgradeable is Initializable {
     function __EIP712_init(string memory name, string memory version) internal onlyInitializing {
         __EIP712_init_unchained(name, version);
     }
-
+    /**
+     * 初始化EIP712的域名和版本
+     */
     function __EIP712_init_unchained(string memory name, string memory version) internal onlyInitializing {
         bytes32 hashedName = keccak256(bytes(name));
         bytes32 hashedVersion = keccak256(bytes(version));
@@ -59,12 +63,15 @@ abstract contract EIP712Upgradeable is Initializable {
     }
 
     /**
+     * 返回当前链的域名分割符
      * @dev Returns the domain separator for the current chain.
      */
     function _domainSeparatorV4() internal view returns (bytes32) {
         return _buildDomainSeparator(_TYPE_HASH, _EIP712NameHash(), _EIP712VersionHash());
     }
-
+    /**
+     *  构建域名分割符
+     */
     function _buildDomainSeparator(
         bytes32 typeHash,
         bytes32 nameHash,
@@ -76,15 +83,17 @@ abstract contract EIP712Upgradeable is Initializable {
     /**
      * @dev Given an already https://eips.ethereum.org/EIPS/eip-712#definition-of-hashstruct[hashed struct], this
      * function returns the hash of the fully encoded EIP712 message for this domain.
-     *
+     * 返回当前域名的eip712消息
      * This hash can be used together with {ECDSA-recover} to obtain the signer of a message. For example:
-     *
+     * 此hash可以用于从签名消息使用ECDSA-recover恢复消息的签名者
      * ```solidity
+     * 签名
      * bytes32 digest = _hashTypedDataV4(keccak256(abi.encode(
      *     keccak256("Mail(address to,string contents)"),
      *     mailTo,
      *     keccak256(bytes(mailContents))
      * )));
+     * 恢复签名
      * address signer = ECDSA.recover(digest, signature);
      * ```
      */
@@ -94,7 +103,7 @@ abstract contract EIP712Upgradeable is Initializable {
 
     /**
      * @dev The hash of the name parameter for the EIP712 domain.
-     *
+     * 域名hash
      * NOTE: This function reads from storage by default, but can be redefined to return a constant value if gas costs
      * are a concern.
      */
@@ -104,7 +113,7 @@ abstract contract EIP712Upgradeable is Initializable {
 
     /**
      * @dev The hash of the version parameter for the EIP712 domain.
-     *
+     * 域名版本
      * NOTE: This function reads from storage by default, but can be redefined to return a constant value if gas costs
      * are a concern.
      */

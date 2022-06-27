@@ -5,6 +5,7 @@ pragma solidity ^0.8.1;
 
 /**
  * @dev Collection of functions related to the address type
+ * 地址类型的方法集
  */
 library AddressUpgradeable {
     /**
@@ -14,20 +15,20 @@ library AddressUpgradeable {
      * ====
      * It is unsafe to assume that an address for which this function returns
      * false is an externally-owned account (EOA) and not a contract.
-     *
+     * 非安全的方式，当时EOA账户或者不是合约时，返回false
      * Among others, `isContract` will return false for the following
      * types of addresses:
-     *
-     *  - an externally-owned account
-     *  - a contract in construction
-     *  - an address where a contract will be created
-     *  - an address where a contract lived, but was destroyed
+     * 返回false的场景
+     *  - an externally-owned account EOA账户
+     *  - a contract in construction  构造中的合约
+     *  - an address where a contract will be crea ted ，合约创建的地址
+     *  - an address where a contract lived, but was destroyed 合约中已经被销毁的账户
      * ====
      *
      * [IMPORTANT]
      * ====
      * You shouldn't rely on `isContract` to protect against flash loan attacks!
-     *
+     * 你不能依赖是否为合约，来保护闪电贷袭击
      * Preventing calls from contracts is highly discouraged. It breaks composability, breaks support for smart wallets
      * like Gnosis Safe, and does not provide security since it can be circumvented by calling from a contract
      * constructor.
@@ -44,12 +45,12 @@ library AddressUpgradeable {
     /**
      * @dev Replacement for Solidity's `transfer`: sends `amount` wei to
      * `recipient`, forwarding all available gas and reverting on errors.
-     *
+     *  Solidity转移方法的替代方式：发送给定数量的wei
      * https://eips.ethereum.org/EIPS/eip-1884[EIP1884] increases the gas cost
      * of certain opcodes, possibly making contracts go over the 2300 gas limit
      * imposed by `transfer`, making them unable to receive funds via
      * `transfer`. {sendValue} removes this limitation.
-     *
+     * [停止使用Solidity的transfer()](https://www.zhihu.com/search?type=content&q=eip-1884)
      * https://diligence.consensys.net/posts/2019/09/stop-using-soliditys-transfer-now/[Learn more].
      *
      * IMPORTANT: because control is transferred to `recipient`, care must be
@@ -68,7 +69,7 @@ library AddressUpgradeable {
      * @dev Performs a Solidity function call using a low level `call`. A
      * plain `call` is an unsafe replacement for a function call: use this
      * function instead.
-     *
+     * 执行solidity低级别的call
      * If `target` reverts with a revert reason, it is bubbled up by this
      * function (like regular Solidity function calls).
      *
@@ -122,7 +123,7 @@ library AddressUpgradeable {
     /**
      * @dev Same as {xref-Address-functionCallWithValue-address-bytes-uint256-}[`functionCallWithValue`], but
      * with `errorMessage` as a fallback revert reason when `target` reverts.
-     *
+     * 低级别的方法调用实现
      * _Available since v3.1._
      */
     function functionCallWithValue(
@@ -133,7 +134,7 @@ library AddressUpgradeable {
     ) internal returns (bytes memory) {
         require(address(this).balance >= value, "Address: insufficient balance for call");
         require(isContract(target), "Address: call to non-contract");
-
+        //调用目标方法
         (bool success, bytes memory returndata) = target.call{value: value}(data);
         return verifyCallResult(success, returndata, errorMessage);
     }
@@ -151,7 +152,7 @@ library AddressUpgradeable {
     /**
      * @dev Same as {xref-Address-functionCall-address-bytes-string-}[`functionCall`],
      * but performing a static call.
-     *
+     * 静态方法调用
      * _Available since v3.3._
      */
     function functionStaticCall(
@@ -168,7 +169,7 @@ library AddressUpgradeable {
     /**
      * @dev Tool to verifies that a low level call was successful, and revert if it wasn't, either by bubbling the
      * revert reason using the provided one.
-     *
+     * 检验合约call结果
      * _Available since v4.3._
      */
     function verifyCallResult(
@@ -177,6 +178,7 @@ library AddressUpgradeable {
         string memory errorMessage
     ) internal pure returns (bytes memory) {
         if (success) {
+            //成功，则返回数据
             return returndata;
         } else {
             // Look for revert reason and bubble it up if present
@@ -188,6 +190,7 @@ library AddressUpgradeable {
                     revert(add(32, returndata), returndata_size)
                 }
             } else {
+                //失败没有返回数据
                 revert(errorMessage);
             }
         }
