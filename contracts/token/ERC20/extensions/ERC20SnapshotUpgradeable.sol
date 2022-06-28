@@ -11,7 +11,7 @@ import "../../../proxy/utils/Initializable.sol";
 /**
  * @dev This contract extends an ERC20 token with a snapshot mechanism. When a snapshot is created, the balances and
  * total supply at the time are recorded for later access.
- *
+ * 具备快照功能的ERC20合约
  * This can be used to safely create mechanisms based on token balances such as trustless dividends or weighted voting.
  * In naive implementations it's possible to perform a "double spend" attack by reusing the same balance from different
  * accounts. By using snapshots to calculate dividends or voting power, those attacks no longer apply. It can also be

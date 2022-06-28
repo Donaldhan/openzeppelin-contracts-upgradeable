@@ -19,7 +19,10 @@ import "../../proxy/utils/Initializable.sol";
  * IMPORTANT: ERC-2981 only specifies a way to signal royalty information and does not enforce its payment. See
  * https://eips.ethereum.org/EIPS/eip-2981#optional-royalty-payments[Rationale] in the EIP. Marketplaces are expected to
  * voluntarily pay royalties together with sales, but note that this standard is not yet widely supported.
- *
+ * 比如那些创作者，因为NFT给创作者带来全新的可能性，不同于版权或水印，NFT 是互联网原生的，出生在互联网上，
+ * 其最大意义在于可以实现标准化的、互操作的、可编程的数字资产。
+ * 如基于以太坊 EIP-2981 标准的智能合约可以将 NFT 后续每次销售收入的一部分（一般是 10%）自动分配给创作者，从而让创作者可以从二级市场中分享收益。
+ * 而最愿意接纳这些创作者的就是那些品牌主，因为很多品牌主正在通过NFT进行新的品牌故事和品牌营销，而IP创作则决定了NFT的天花板。
  * _Available since v4.5._
  */
 abstract contract ERC2981Upgradeable is Initializable, IERC2981Upgradeable, ERC165Upgradeable {
@@ -30,10 +33,10 @@ abstract contract ERC2981Upgradeable is Initializable, IERC2981Upgradeable, ERC1
     }
     struct RoyaltyInfo {
         address receiver;
-        uint96 royaltyFraction;
+        uint96 royaltyFraction; //版税分子，版税分母_feeDenominator
     }
 
-    RoyaltyInfo private _defaultRoyaltyInfo;
+    RoyaltyInfo private _defaultRoyaltyInfo;//默认版税信息
     mapping(uint256 => RoyaltyInfo) private _tokenRoyaltyInfo;
 
     /**
@@ -52,7 +55,7 @@ abstract contract ERC2981Upgradeable is Initializable, IERC2981Upgradeable, ERC1
         if (royalty.receiver == address(0)) {
             royalty = _defaultRoyaltyInfo;
         }
-
+        //抽成
         uint256 royaltyAmount = (_salePrice * royalty.royaltyFraction) / _feeDenominator();
 
         return (royalty.receiver, royaltyAmount);
@@ -69,11 +72,11 @@ abstract contract ERC2981Upgradeable is Initializable, IERC2981Upgradeable, ERC1
 
     /**
      * @dev Sets the royalty information that all ids in this contract will default to.
-     *
+     * 设置默认版税
      * Requirements:
      *
      * - `receiver` cannot be the zero address.
-     * - `feeNumerator` cannot be greater than the fee denominator.
+     * - `feeNumerator` cannot be greater than the fee denominator. ，不能大于版税费用的分母
      */
     function _setDefaultRoyalty(address receiver, uint96 feeNumerator) internal virtual {
         require(feeNumerator <= _feeDenominator(), "ERC2981: royalty fee will exceed salePrice");
@@ -91,7 +94,7 @@ abstract contract ERC2981Upgradeable is Initializable, IERC2981Upgradeable, ERC1
 
     /**
      * @dev Sets the royalty information for a specific token id, overriding the global default.
-     *
+     * 设置接受地址的版税
      * Requirements:
      *
      * - `receiver` cannot be the zero address.
@@ -110,6 +113,7 @@ abstract contract ERC2981Upgradeable is Initializable, IERC2981Upgradeable, ERC1
 
     /**
      * @dev Resets royalty information for the token id back to the global default.
+     * 重置版税
      */
     function _resetTokenRoyalty(uint256 tokenId) internal virtual {
         delete _tokenRoyaltyInfo[tokenId];

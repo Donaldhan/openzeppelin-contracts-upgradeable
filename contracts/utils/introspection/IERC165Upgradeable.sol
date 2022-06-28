@@ -9,7 +9,7 @@ pragma solidity ^0.8.0;
  *
  * Implementers can declare support of contract interfaces, which can then be
  * queried by others ({ERC165Checker}).
- *
+ *  可升级的165
  * For an implementation, see {ERC165}.
  */
 interface IERC165Upgradeable {

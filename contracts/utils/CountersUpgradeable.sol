@@ -8,7 +8,7 @@ pragma solidity ^0.8.0;
  * @author Matt Condon (@shrugs)
  * @dev Provides counters that can only be incremented, decremented or reset. This can be used e.g. to track the number
  * of elements in a mapping, issuing ERC721 ids, or counting request ids.
- *
+ * 可升级计数器
  * Include with `using Counters for Counters.Counter;`
  */
 library CountersUpgradeable {

@@ -7,6 +7,9 @@ pragma solidity ^0.8.0;
  * @dev Standard math utilities missing in the Solidity language.
  */
 library MathUpgradeable {
+    /**
+     * 取舍模式
+     */
     enum Rounding {
         Down, // Toward negative infinity
         Up, // Toward infinity
@@ -152,7 +155,7 @@ library MathUpgradeable {
 
     /**
      * @dev Returns the square root of a number. It the number is not a perfect square, the value is rounded down.
-     *
+     * 开放，向下取舍
      * Inspired by Henry S. Warren, Jr.'s "Hacker's Delight" (Chapter 11).
      */
     function sqrt(uint256 a) internal pure returns (uint256) {
@@ -214,7 +217,7 @@ library MathUpgradeable {
     }
 
     /**
-     * @notice Calculates sqrt(a), following the selected rounding direction.
+     * @notice Calculates sqrt(a), following the selected rounding direction. 开方
      */
     function sqrt(uint256 a, Rounding rounding) internal pure returns (uint256) {
         uint256 result = sqrt(a);

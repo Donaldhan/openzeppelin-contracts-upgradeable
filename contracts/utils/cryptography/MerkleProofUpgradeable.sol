@@ -16,6 +16,8 @@ pragma solidity ^0.8.0;
  * hashing, or use a hash function other than keccak256 for hashing leaves.
  * This is because the concatenation of a sorted pair of internal nodes in
  * the merkle tree could be reinterpreted as a leaf value.
+ * 您应该避免在之前使用 64 字节长的叶值散列， 或者使用keccak256以外的叶节点hash。
+ * 应该这会导致，这是因为将排序的内部节点对串联在默克尔树可以重新解释为叶值。
  */
 library MerkleProofUpgradeable {
     /**
@@ -23,6 +25,7 @@ library MerkleProofUpgradeable {
      * defined by `root`. For this, a `proof` must be provided, containing
      * sibling hashes on the branch from the leaf to the root of the tree. Each
      * pair of leaves and each pair of pre-images are assumed to be sorted.
+     * 根据默克尔root，leaf，及校验证明，验证leaf存在与默克尔树中
      */
     function verify(
         bytes32[] memory proof,
@@ -50,7 +53,7 @@ library MerkleProofUpgradeable {
      * from `leaf` using `proof`. A `proof` is valid if and only if the rebuilt
      * hash matches the root of the tree. When processing the proof, the pairs
      * of leafs & pre-images are assumed to be sorted.
-     *
+     * 重建默克尔树
      * _Available since v4.4._
      */
     function processProof(bytes32[] memory proof, bytes32 leaf) internal pure returns (bytes32) {
@@ -63,7 +66,7 @@ library MerkleProofUpgradeable {
 
     /**
      * @dev Calldata version of {processProof}
-     *
+     * 重建默克尔树  Calldata 版本
      * _Available since v4.7._
      */
     function processProofCalldata(bytes32[] calldata proof, bytes32 leaf) internal pure returns (bytes32) {
@@ -77,7 +80,7 @@ library MerkleProofUpgradeable {
     /**
      * @dev Returns true if the `leaves` can be proved to be a part of a Merkle tree defined by
      * `root`, according to `proof` and `proofFlags` as described in {processMultiProof}.
-     *
+     * 多节点默克尔证明
      * _Available since v4.7._
      */
     function multiProofVerify(
@@ -98,7 +101,7 @@ library MerkleProofUpgradeable {
      */
     function processMultiProof(
         bytes32[] calldata proof,
-        bool[] calldata proofFlags,
+        bool[] calldata proofFlags, //是否使用证明proofhash，否则使用
         bytes32[] calldata leaves
     ) internal pure returns (bytes32 merkleRoot) {
         // This function rebuild the root hash by traversing the tree up from the leaves. The root is rebuilt by
@@ -123,7 +126,9 @@ library MerkleProofUpgradeable {
         // - depending on the flag, either another value for the "main queue" (merging branches) or an element from the
         //   `proof` array.
         for (uint256 i = 0; i < totalHashes; i++) {
+            //左节点，小于当前叶节点数，则使用叶节点hash，否则使用计算出来的hash
             bytes32 a = leafPos < leavesLen ? leaves[leafPos++] : hashes[hashPos++];
+            //右节点
             bytes32 b = proofFlags[i] ? leafPos < leavesLen ? leaves[leafPos++] : hashes[hashPos++] : proof[proofPos++];
             hashes[i] = _hashPair(a, b);
         }
@@ -136,13 +141,18 @@ library MerkleProofUpgradeable {
             return proof[0];
         }
     }
-
+    /**
+     * 计算两个节点的父节点hash
+     */
     function _hashPair(bytes32 a, bytes32 b) private pure returns (bytes32) {
         return a < b ? _efficientHash(a, b) : _efficientHash(b, a);
     }
-
+    /**
+     * 
+     */
     function _efficientHash(bytes32 a, bytes32 b) private pure returns (bytes32 value) {
         /// @solidity memory-safe-assembly
+        //https://solidity-cn.readthedocs.io/zh/develop/assembly.html
         assembly {
             mstore(0x00, a)
             mstore(0x20, b)

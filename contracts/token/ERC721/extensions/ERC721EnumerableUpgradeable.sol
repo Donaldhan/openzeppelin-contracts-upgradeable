@@ -18,16 +18,16 @@ abstract contract ERC721EnumerableUpgradeable is Initializable, ERC721Upgradeabl
 
     function __ERC721Enumerable_init_unchained() internal onlyInitializing {
     }
-    // Mapping from owner to list of owned token IDs
+    // Mapping from owner to list of owned token IDs 拥有者token及其对应的索引
     mapping(address => mapping(uint256 => uint256)) private _ownedTokens;
 
     // Mapping from token ID to index of the owner tokens list
     mapping(uint256 => uint256) private _ownedTokensIndex;
 
-    // Array with all token ids, used for enumeration
+    // Array with all token ids, used for enumeration 所有token
     uint256[] private _allTokens;
 
-    // Mapping from token id to position in the allTokens array
+    // Mapping from token id to position in the allTokens array， tokenId，在token中的索引
     mapping(uint256 => uint256) private _allTokensIndex;
 
     /**
@@ -39,6 +39,7 @@ abstract contract ERC721EnumerableUpgradeable is Initializable, ERC721Upgradeabl
 
     /**
      * @dev See {IERC721Enumerable-tokenOfOwnerByIndex}.
+     * 用户索引对应的tokenId
      */
     function tokenOfOwnerByIndex(address owner, uint256 index) public view virtual override returns (uint256) {
         require(index < ERC721Upgradeable.balanceOf(owner), "ERC721Enumerable: owner index out of bounds");
@@ -54,6 +55,7 @@ abstract contract ERC721EnumerableUpgradeable is Initializable, ERC721Upgradeabl
 
     /**
      * @dev See {IERC721Enumerable-tokenByIndex}.
+     * 索引对应的token
      */
     function tokenByIndex(uint256 index) public view virtual override returns (uint256) {
         require(index < ERC721EnumerableUpgradeable.totalSupply(), "ERC721Enumerable: global index out of bounds");
@@ -95,6 +97,7 @@ abstract contract ERC721EnumerableUpgradeable is Initializable, ERC721Upgradeabl
     }
 
     /**
+     * 添加token到给定用户
      * @dev Private function to add a token to this extension's ownership-tracking data structures.
      * @param to address representing the new owner of the given token ID
      * @param tokenId uint256 ID of the token to be added to the tokens list of the given address
@@ -106,6 +109,7 @@ abstract contract ERC721EnumerableUpgradeable is Initializable, ERC721Upgradeabl
     }
 
     /**
+     * 添加到所有token
      * @dev Private function to add a token to this extension's token tracking data structures.
      * @param tokenId uint256 ID of the token to be added to the tokens list
      */
@@ -119,6 +123,7 @@ abstract contract ERC721EnumerableUpgradeable is Initializable, ERC721Upgradeabl
      * while the token is not assigned a new owner, the `_ownedTokensIndex` mapping is _not_ updated: this allows for
      * gas optimizations e.g. when performing a transfer operation (avoiding double writes).
      * This has O(1) time complexity, but alters the order of the _ownedTokens array.
+     * 从拥有者移除tokenId
      * @param from address representing the previous owner of the given token ID
      * @param tokenId uint256 ID of the token to be removed from the tokens list of the given address
      */
@@ -145,6 +150,7 @@ abstract contract ERC721EnumerableUpgradeable is Initializable, ERC721Upgradeabl
     /**
      * @dev Private function to remove a token from this extension's token tracking data structures.
      * This has O(1) time complexity, but alters the order of the _allTokens array.
+     * 移除tokenId
      * @param tokenId uint256 ID of the token to be removed from the tokens list
      */
     function _removeTokenFromAllTokensEnumeration(uint256 tokenId) private {

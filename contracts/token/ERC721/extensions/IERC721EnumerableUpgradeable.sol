@@ -6,8 +6,9 @@ pragma solidity ^0.8.0;
 import "../IERC721Upgradeable.sol";
 
 /**
- * @title ERC-721 Non-Fungible Token Standard, optional enumeration extension
+ * @title ERC-721 Non-Fungible Token Standard, optional enumeration extension（可选的枚举拓展） 
  * @dev See https://eips.ethereum.org/EIPS/eip-721
+
  */
 interface IERC721EnumerableUpgradeable is IERC721Upgradeable {
     /**

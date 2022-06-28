@@ -8,6 +8,7 @@ import "../../../proxy/utils/Initializable.sol";
 
 /**
  * @dev ERC721 token with storage based token URI management.
+ * 基于token url 管理的实现
  */
 abstract contract ERC721URIStorageUpgradeable is Initializable, ERC721Upgradeable {
     function __ERC721URIStorage_init() internal onlyInitializing {
@@ -17,7 +18,7 @@ abstract contract ERC721URIStorageUpgradeable is Initializable, ERC721Upgradeabl
     }
     using StringsUpgradeable for uint256;
 
-    // Optional mapping for token URIs
+    // Optional mapping for token URIs， token URL映射
     mapping(uint256 => string) private _tokenURIs;
 
     /**

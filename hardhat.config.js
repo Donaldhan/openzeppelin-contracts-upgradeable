@@ -27,7 +27,7 @@ const argv = require('yargs/yargs')()
     mode: {
       alias: 'compileMode',
       type: 'string',
-      choices: [ 'production', 'development' ],
+      choices: ['production', 'development'],
       default: 'development',
     },
     ir: {
@@ -64,14 +64,27 @@ const withOptimizations = argv.enableGasReport || argv.compileMode === 'producti
  */
 module.exports = {
   solidity: {
-    version: argv.compiler,
-    settings: {
-      optimizer: {
-        enabled: withOptimizations,
-        runs: 200,
-      },
-      viaIR: withOptimizations && argv.ir,
+    compilers: [{
+      version: argv.compiler,
+      settings: {
+        optimizer: {
+          enabled: withOptimizations,
+          runs: 200,
+        },
+        viaIR: withOptimizations && argv.ir,
+      }
     },
+      {
+        version: "0.8.0",
+        settings: {
+          optimizer: {
+            enabled: withOptimizations,
+            runs: 200,
+          },
+          viaIR: withOptimizations && argv.ir,
+        }
+      }
+    ]
   },
   networks: {
     hardhat: {

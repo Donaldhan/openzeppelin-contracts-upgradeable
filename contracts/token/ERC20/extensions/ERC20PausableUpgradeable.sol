@@ -9,7 +9,7 @@ import "../../../proxy/utils/Initializable.sol";
 
 /**
  * @dev ERC20 token with pausable token transfers, minting and burning.
- *
+ * ERC20暂停升级合约
  * Useful for scenarios such as preventing trades until the end of an evaluation
  * period, or having an emergency switch for freezing all token transfers in the
  * event of a large bug.

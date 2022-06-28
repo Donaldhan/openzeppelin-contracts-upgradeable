@@ -7,7 +7,7 @@ import "../IERC20Upgradeable.sol";
 
 /**
  * @dev Interface for the optional metadata functions from the ERC20 standard.
- *
+ * IERC20元数据合约
  * _Available since v4.1._
  */
 interface IERC20MetadataUpgradeable is IERC20Upgradeable {

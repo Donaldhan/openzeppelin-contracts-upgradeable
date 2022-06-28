@@ -8,7 +8,7 @@ import "../../../proxy/utils/Initializable.sol";
 
 /**
  * @dev Extension of {ERC20} that adds a cap to the supply of tokens.
- *
+ * 带总量限制的ERC20
  * @custom:storage-size 51
  */
 abstract contract ERC20CappedUpgradeable is Initializable, ERC20Upgradeable {

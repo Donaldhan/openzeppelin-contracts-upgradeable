@@ -37,18 +37,18 @@ abstract contract VotesUpgradeable is Initializable, IVotesUpgradeable, ContextU
     }
     using CheckpointsUpgradeable for CheckpointsUpgradeable.History;
     using CountersUpgradeable for CountersUpgradeable.Counter;
-
+    //代理类型hash
     bytes32 private constant _DELEGATION_TYPEHASH =
         keccak256("Delegation(address delegatee,uint256 nonce,uint256 expiry)");
 
-    mapping(address => address) private _delegation;
-    mapping(address => CheckpointsUpgradeable.History) private _delegateCheckpoints;
-    CheckpointsUpgradeable.History private _totalCheckpoints;
-
+    mapping(address => address) private _delegation;//账户代理
+    mapping(address => CheckpointsUpgradeable.History) private _delegateCheckpoints; //代理检查点
+    CheckpointsUpgradeable.History private _totalCheckpoints; //所有检查点
+    //用户nonce
     mapping(address => CountersUpgradeable.Counter) private _nonces;
 
     /**
-     * @dev Returns the current amount of votes that `account` has.
+     * @dev Returns the current amount of votes that `account` has. 当年账户的投票数
      */
     function getVotes(address account) public view virtual override returns (uint256) {
         return _delegateCheckpoints[account].latest();
@@ -56,7 +56,7 @@ abstract contract VotesUpgradeable is Initializable, IVotesUpgradeable, ContextU
 
     /**
      * @dev Returns the amount of votes that `account` had at the end of a past block (`blockNumber`).
-     *
+     * 返回代理在某个区块时的投票数
      * Requirements:
      *
      * - `blockNumber` must have been already mined
@@ -67,7 +67,7 @@ abstract contract VotesUpgradeable is Initializable, IVotesUpgradeable, ContextU
 
     /**
      * @dev Returns the total supply of votes available at the end of a past block (`blockNumber`).
-     *
+     * 获取过去区块时账户总可用投票数
      * NOTE: This value is the sum of all available votes, which is not necessarily the sum of all delegated votes.
      * Votes that have not been delegated are still part of total supply, even though they would not participate in a
      * vote.
@@ -82,21 +82,21 @@ abstract contract VotesUpgradeable is Initializable, IVotesUpgradeable, ContextU
     }
 
     /**
-     * @dev Returns the current total supply of votes.
+     * @dev Returns the current total supply of votes. 获取当前总投票数
      */
     function _getTotalSupply() internal view virtual returns (uint256) {
         return _totalCheckpoints.latest();
     }
 
     /**
-     * @dev Returns the delegate that `account` has chosen.
+     * @dev Returns the delegate that `account` has chosen. 返回账号代理地址
      */
     function delegates(address account) public view virtual override returns (address) {
         return _delegation[account];
     }
 
     /**
-     * @dev Delegates votes from the sender to `delegatee`.
+     * @dev Delegates votes from the sender to `delegatee`. 设置账户代理
      */
     function delegate(address delegatee) public virtual override {
         address account = _msgSender();
@@ -105,6 +105,7 @@ abstract contract VotesUpgradeable is Initializable, IVotesUpgradeable, ContextU
 
     /**
      * @dev Delegates votes from signer to `delegatee`.
+     * 代理签名者
      */
     function delegateBySig(
         address delegatee,
@@ -127,20 +128,22 @@ abstract contract VotesUpgradeable is Initializable, IVotesUpgradeable, ContextU
 
     /**
      * @dev Delegate all of `account`'s voting units to `delegatee`.
-     *
+     * 
      * Emits events {DelegateChanged} and {DelegateVotesChanged}.
      */
     function _delegate(address account, address delegatee) internal virtual {
         address oldDelegate = delegates(account);
         _delegation[account] = delegatee;
-
+        //账户代理变更
         emit DelegateChanged(account, oldDelegate, delegatee);
+        //转移投票份额给代理者
         _moveDelegateVotes(oldDelegate, delegatee, _getVotingUnits(account));
     }
 
     /**
      * @dev Transfers, mints, or burns voting units. To register a mint, `from` should be zero. To register a burn, `to`
      * should be zero. Total supply of voting units will be adjusted with mints and burns.
+     * 转移，挖取，或销毁投票份额。挖取，from为0地址，销毁to为0地址。 总供应量根据mint和burn计算得来。
      */
     function _transferVotingUnits(
         address from,
@@ -166,10 +169,12 @@ abstract contract VotesUpgradeable is Initializable, IVotesUpgradeable, ContextU
     ) private {
         if (from != to && amount > 0) {
             if (from != address(0)) {
+                //更新账户的投票份额=当前账户-代理份额
                 (uint256 oldValue, uint256 newValue) = _delegateCheckpoints[from].push(_subtract, amount);
                 emit DelegateVotesChanged(from, oldValue, newValue);
             }
             if (to != address(0)) {
+                //代理账户份额=代理账户当前份额+代理份额
                 (uint256 oldValue, uint256 newValue) = _delegateCheckpoints[to].push(_add, amount);
                 emit DelegateVotesChanged(to, oldValue, newValue);
             }
@@ -196,7 +201,7 @@ abstract contract VotesUpgradeable is Initializable, IVotesUpgradeable, ContextU
     }
 
     /**
-     * @dev Returns an address nonce.
+     * @dev Returns an address nonce. 地址nonce
      */
     function nonces(address owner) public view virtual returns (uint256) {
         return _nonces[owner].current();

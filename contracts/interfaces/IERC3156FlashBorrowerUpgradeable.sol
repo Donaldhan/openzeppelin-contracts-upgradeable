@@ -6,13 +6,13 @@ pragma solidity ^0.8.0;
 /**
  * @dev Interface of the ERC3156 FlashBorrower, as defined in
  * https://eips.ethereum.org/EIPS/eip-3156[ERC-3156].
- *
+ * 闪电贷的街坊合约接口
  * _Available since v4.1._
  */
 interface IERC3156FlashBorrowerUpgradeable {
     /**
      * @dev Receive a flash loan.
-     * @param initiator The initiator of the loan.
+     * @param initiator The initiator of the loan.  
      * @param token The loan currency.
      * @param amount The amount of tokens lent.
      * @param fee The additional amount of tokens to repay.

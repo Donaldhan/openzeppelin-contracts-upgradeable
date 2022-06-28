@@ -25,9 +25,9 @@ import "../../../proxy/utils/Initializable.sol";
 abstract contract ERC20PermitUpgradeable is Initializable, ERC20Upgradeable, IERC20PermitUpgradeable, EIP712Upgradeable {
     using CountersUpgradeable for CountersUpgradeable.Counter;
 
-    mapping(address => CountersUpgradeable.Counter) private _nonces;
+    mapping(address => CountersUpgradeable.Counter) private _nonces;//用户nonce
 
-    // solhint-disable-next-line var-name-mixedcase
+    // solhint-disable-next-line var-name-mixedcase, 允许域名类型hash
     bytes32 private constant _PERMIT_TYPEHASH =
         keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
     /**
@@ -51,7 +51,7 @@ abstract contract ERC20PermitUpgradeable is Initializable, ERC20Upgradeable, IER
     function __ERC20Permit_init_unchained(string memory) internal onlyInitializing {}
 
     /**
-     * @dev See {IERC20Permit-permit}.
+     * @dev See {IERC20Permit-permit}. 使用拥有者的签名，替拥有者授权
      */
     function permit(
         address owner,
@@ -63,14 +63,14 @@ abstract contract ERC20PermitUpgradeable is Initializable, ERC20Upgradeable, IER
         bytes32 s
     ) public virtual override {
         require(block.timestamp <= deadline, "ERC20Permit: expired deadline");
-
+        //结构hash
         bytes32 structHash = keccak256(abi.encode(_PERMIT_TYPEHASH, owner, spender, value, _useNonce(owner), deadline));
 
         bytes32 hash = _hashTypedDataV4(structHash);
-
+        //恢复签名者
         address signer = ECDSAUpgradeable.recover(hash, v, r, s);
         require(signer == owner, "ERC20Permit: invalid signature");
-
+        //允许
         _approve(owner, spender, value);
     }
 
@@ -91,7 +91,7 @@ abstract contract ERC20PermitUpgradeable is Initializable, ERC20Upgradeable, IER
 
     /**
      * @dev "Consume a nonce": return the current value and increment.
-     *
+     * 自增nonce
      * _Available since v4.1._
      */
     function _useNonce(address owner) internal virtual returns (uint256 current) {

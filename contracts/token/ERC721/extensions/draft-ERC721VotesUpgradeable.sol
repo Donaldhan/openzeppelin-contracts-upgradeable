@@ -10,7 +10,7 @@ import "../../../proxy/utils/Initializable.sol";
 /**
  * @dev Extension of ERC721 to support voting and delegation as implemented by {Votes}, where each individual NFT counts
  * as 1 vote unit.
- *
+ * 基于ERC721 NTF投票，一个NFT为一个投票份额
  * Tokens do not count as votes until they are delegated, because votes must be tracked which incurs an additional cost
  * on every transfer. Token holders can either delegate to a trusted representative who will decide how to make use of
  * the votes in governance decisions, or they can delegate to themselves to be their own representative.

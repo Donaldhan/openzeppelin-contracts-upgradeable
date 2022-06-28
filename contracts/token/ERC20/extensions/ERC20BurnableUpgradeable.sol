@@ -11,6 +11,7 @@ import "../../../proxy/utils/Initializable.sol";
  * @dev Extension of {ERC20} that allows token holders to destroy both their own
  * tokens and those that they have an allowance for, in a way that can be
  * recognized off-chain (via event analysis).
+ * 可销毁的ERC20合约
  */
 abstract contract ERC20BurnableUpgradeable is Initializable, ContextUpgradeable, ERC20Upgradeable {
     function __ERC20Burnable_init() internal onlyInitializing {
@@ -39,6 +40,7 @@ abstract contract ERC20BurnableUpgradeable is Initializable, ContextUpgradeable,
      * `amount`.
      */
     function burnFrom(address account, uint256 amount) public virtual {
+        //扣除允许量
         _spendAllowance(account, _msgSender(), amount);
         _burn(account, amount);
     }

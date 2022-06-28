@@ -17,6 +17,7 @@ pragma solidity ^0.8.0;
  *
  * Can be combined with {SafeMath} and {SignedSafeMath} to extend it to smaller types, by performing
  * all math on `uint256` and `int256` and then downcasting.
+ * 安全转换类
  */
 library SafeCastUpgradeable {
     /**
@@ -79,7 +80,7 @@ library SafeCastUpgradeable {
      * Requirements:
      *
      * - input must fit into 224 bits
-     *
+     * 从uint256转换为uint224
      * _Available since v4.2._
      */
     function toUint224(uint256 value) internal pure returns (uint224) {

@@ -9,6 +9,7 @@ import "../../../proxy/utils/Initializable.sol";
 
 /**
  * @title ERC721 Burnable Token
+ * 可销毁的ERC721 token
  * @dev ERC721 Token that can be burned (destroyed).
  */
 abstract contract ERC721BurnableUpgradeable is Initializable, ContextUpgradeable, ERC721Upgradeable {

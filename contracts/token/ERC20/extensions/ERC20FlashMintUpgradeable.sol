@@ -26,7 +26,7 @@ abstract contract ERC20FlashMintUpgradeable is Initializable, ERC20Upgradeable, 
     bytes32 private constant _RETURN_VALUE = keccak256("ERC3156FlashBorrower.onFlashLoan");
 
     /**
-     * @dev Returns the maximum amount of tokens available for loan.
+     * @dev Returns the maximum amount of tokens available for loan. 最大可贷金额
      * @param token The address of the token that is requested.
      * @return The amount of token that can be loaned.
      */
@@ -37,7 +37,7 @@ abstract contract ERC20FlashMintUpgradeable is Initializable, ERC20Upgradeable, 
     /**
      * @dev Returns the fee applied when doing flash loans. By default this
      * implementation has 0 fees. This function can be overloaded to make
-     * the flash loan mechanism deflationary.
+     * the flash loan mechanism deflationary. 默认为0，实现者可以重写费用
      * @param token The token to be flash loaned.
      * @param amount The amount of tokens to be loaned.
      * @return The fees applied to the corresponding flash loan.
@@ -53,6 +53,7 @@ abstract contract ERC20FlashMintUpgradeable is Initializable, ERC20Upgradeable, 
      * @dev Returns the receiver address of the flash fee. By default this
      * implementation returns the address(0) which means the fee amount will be burnt.
      * This function can be overloaded to change the fee receiver.
+     * 闪电贷的接收者，默认为0直接销毁，可以重写此方法的接收者
      * @return The address for which the flash fee will be sent to.
      */
     function _flashFeeReceiver() internal view virtual returns (address) {
@@ -65,10 +66,12 @@ abstract contract ERC20FlashMintUpgradeable is Initializable, ERC20Upgradeable, 
      * interface. By the end of the flash loan, the receiver is expected to own
      * amount + fee tokens and have them approved back to the token contract itself so
      * they can be burned.
+     * 执行一个闪电贷。新的token将会挖出，发送给接收者，需要实现IERC3156FlashBorrower， 接收者
+     * 需要实现amount + fee 
      * @param receiver The receiver of the flash loan. Should implement the
-     * {IERC3156FlashBorrower.onFlashLoan} interface.
+     * {IERC3156FlashBorrower.onFlashLoan} interface.  接收者必须实现IERC3156FlashBorrower.onFlashLoan方法
      * @param token The token to be flash loaned. Only `address(this)` is
-     * supported.
+     * supported.  贷方token
      * @param amount The amount of tokens to be loaned.
      * @param data An arbitrary datafield that is passed to the receiver.
      * @return `true` if the flash loan was successful.
@@ -84,6 +87,7 @@ abstract contract ERC20FlashMintUpgradeable is Initializable, ERC20Upgradeable, 
     ) public virtual override returns (bool) {
         require(amount <= maxFlashLoan(token), "ERC20FlashMint: amount exceeds maxFlashLoan");
         uint256 fee = flashFee(token, amount);
+        //挖取新token
         _mint(address(receiver), amount);
         require(
             receiver.onFlashLoan(msg.sender, token, amount, fee, data) == _RETURN_VALUE,
@@ -92,9 +96,12 @@ abstract contract ERC20FlashMintUpgradeable is Initializable, ERC20Upgradeable, 
         address flashFeeReceiver = _flashFeeReceiver();
         _spendAllowance(address(receiver), address(this), amount + fee);
         if (fee == 0 || flashFeeReceiver == address(0)) {
+            //销毁
             _burn(address(receiver), amount + fee);
         } else {
+            //销毁接收者挖取的数量，并
             _burn(address(receiver), amount);
+            //转移费用，到闪电贷费用接收者
             _transfer(address(receiver), flashFeeReceiver, fee);
         }
         return true;
