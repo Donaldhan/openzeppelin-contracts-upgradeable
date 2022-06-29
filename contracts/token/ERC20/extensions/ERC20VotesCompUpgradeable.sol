@@ -9,7 +9,7 @@ import "../../../proxy/utils/Initializable.sol";
 /**
  * @dev Extension of ERC20 to support Compound's voting and delegation. This version exactly matches Compound's
  * interface, with the drawback of only supporting supply up to (2^96^ - 1).
- *
+ * 支持Compound投票和代理的ERC20拓展
  * NOTE: You should use this contract if you need exact compatibility with COMP (for example in order to use your token
  * with Governor Alpha or Bravo) and if you are sure the supply cap of 2^96^ is enough for you. Otherwise, use the
  * {ERC20Votes} variant of this module.
@@ -30,14 +30,14 @@ abstract contract ERC20VotesCompUpgradeable is Initializable, ERC20VotesUpgradea
     function __ERC20VotesComp_init_unchained() internal onlyInitializing {
     }
     /**
-     * @dev Comp version of the {getVotes} accessor, with `uint96` return type.
+     * @dev Comp version of the {getVotes} accessor, with `uint96` return type. 当前账号投票份额
      */
     function getCurrentVotes(address account) external view virtual returns (uint96) {
         return SafeCastUpgradeable.toUint96(getVotes(account));
     }
 
     /**
-     * @dev Comp version of the {getPastVotes} accessor, with `uint96` return type.
+     * @dev Comp version of the {getPastVotes} accessor, with `uint96` return type. 获取给定区块的投票份额
      */
     function getPriorVotes(address account, uint256 blockNumber) external view virtual returns (uint96) {
         return SafeCastUpgradeable.toUint96(getPastVotes(account, blockNumber));

@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 
 /**
  * @dev Interface of the ERC777TokensRecipient standard as defined in the EIP.
- *
+ * ERC777TokensRecipient 接受者
  * Accounts can be notified of {IERC777} tokens being sent to them by having a
  * contract implement this interface (contract holders can be their own
  * implementer) and registering it on the

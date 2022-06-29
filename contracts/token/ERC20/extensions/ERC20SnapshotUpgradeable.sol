@@ -58,11 +58,12 @@ abstract contract ERC20SnapshotUpgradeable is Initializable, ERC20Upgradeable {
         uint256[] ids;
         uint256[] values;
     }
-
+   //地址余额快照
     mapping(address => Snapshots) private _accountBalanceSnapshots;
     Snapshots private _totalSupplySnapshots;
 
     // Snapshot ids increase monotonically, with the first value being 1. An id of 0 is invalid.
+    //快照id
     CountersUpgradeable.Counter private _currentSnapshotId;
 
     /**
@@ -72,7 +73,7 @@ abstract contract ERC20SnapshotUpgradeable is Initializable, ERC20Upgradeable {
 
     /**
      * @dev Creates a new snapshot and returns its snapshot id.
-     *
+     * 创建一个新的快照
      * Emits a {Snapshot} event that contains the same id.
      *
      * {_snapshot} is `internal` and you have to decide how to expose it externally. Its usage may be restricted to a
@@ -108,6 +109,7 @@ abstract contract ERC20SnapshotUpgradeable is Initializable, ERC20Upgradeable {
 
     /**
      * @dev Retrieves the balance of `account` at the time `snapshotId` was created.
+     * 存在快照，返回快照，否则返回当前账户余额
      */
     function balanceOfAt(address account, uint256 snapshotId) public view virtual returns (uint256) {
         (bool snapshotted, uint256 value) = _valueAt(snapshotId, _accountBalanceSnapshots[account]);
@@ -117,10 +119,10 @@ abstract contract ERC20SnapshotUpgradeable is Initializable, ERC20Upgradeable {
 
     /**
      * @dev Retrieves the total supply at the time `snapshotId` was created.
+     * 总供应量，存在则返回快照，否则为当前总供应量
      */
     function totalSupplyAt(uint256 snapshotId) public view virtual returns (uint256) {
         (bool snapshotted, uint256 value) = _valueAt(snapshotId, _totalSupplySnapshots);
-
         return snapshotted ? value : totalSupply();
     }
 
@@ -134,20 +136,22 @@ abstract contract ERC20SnapshotUpgradeable is Initializable, ERC20Upgradeable {
         super._beforeTokenTransfer(from, to, amount);
 
         if (from == address(0)) {
-            // mint
+            // mint 挖矿操作
             _updateAccountSnapshot(to);
             _updateTotalSupplySnapshot();
         } else if (to == address(0)) {
-            // burn
+            // burn 销毁
             _updateAccountSnapshot(from);
             _updateTotalSupplySnapshot();
         } else {
-            // transfer
+            // transfer 转移
             _updateAccountSnapshot(from);
             _updateAccountSnapshot(to);
         }
     }
-
+     /**
+     获取快照对应的余额
+      */
     function _valueAt(uint256 snapshotId, Snapshots storage snapshots) private view returns (bool, uint256) {
         require(snapshotId > 0, "ERC20Snapshot: id is 0");
         require(snapshotId <= _getCurrentSnapshotId(), "ERC20Snapshot: nonexistent id");
@@ -165,7 +169,7 @@ abstract contract ERC20SnapshotUpgradeable is Initializable, ERC20Upgradeable {
         // In summary, we need to find an element in an array, returning the index of the smallest value that is larger if
         // it is not found, unless said value doesn't exist (e.g. when all values are smaller). Arrays.findUpperBound does
         // exactly this.
-
+        //获取快照最接近的索引 
         uint256 index = snapshots.ids.findUpperBound(snapshotId);
 
         if (index == snapshots.ids.length) {
@@ -174,15 +178,21 @@ abstract contract ERC20SnapshotUpgradeable is Initializable, ERC20Upgradeable {
             return (true, snapshots.values[index]);
         }
     }
-
+    /**
+     * 更新账户快照
+     */
     function _updateAccountSnapshot(address account) private {
         _updateSnapshot(_accountBalanceSnapshots[account], balanceOf(account));
     }
-
+    /**
+     * 更新总供应量快照   
+     */
     function _updateTotalSupplySnapshot() private {
         _updateSnapshot(_totalSupplySnapshots, totalSupply());
     }
-
+    /**
+     * 更新账户余额快照
+     */
     function _updateSnapshot(Snapshots storage snapshots, uint256 currentValue) private {
         uint256 currentId = _getCurrentSnapshotId();
         if (_lastSnapshotId(snapshots.ids) < currentId) {
@@ -190,7 +200,9 @@ abstract contract ERC20SnapshotUpgradeable is Initializable, ERC20Upgradeable {
             snapshots.values.push(currentValue);
         }
     }
-
+    /**
+     * 最后一个快照id
+     */
     function _lastSnapshotId(uint256[] storage ids) private view returns (uint256) {
         if (ids.length == 0) {
             return 0;

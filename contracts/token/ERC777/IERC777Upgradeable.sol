@@ -5,7 +5,8 @@ pragma solidity ^0.8.0;
 
 /**
  * @dev Interface of the ERC777Token standard as defined in the EIP.
- *
+ * [EIP 1820: 伪自省注册表合约](https://learnblockchain.cn/docs/eips/eip-1820.html#%E7%AE%80%E8%A6%81%E8%AF%B4%E6%98%8E) 
+ * [EIP 777: ERC777 代币标准(https://learnblockchain.cn/docs/eips/eip-777.html#%E8%A7%84%E8%8C%83) 
  * This contract uses the
  * https://eips.ethereum.org/EIPS/eip-1820[ERC1820 registry standard] to let
  * token holders and recipients react to token movements by using setting implementers
@@ -15,25 +16,25 @@ pragma solidity ^0.8.0;
 interface IERC777Upgradeable {
     /**
      * @dev Emitted when `amount` tokens are created by `operator` and assigned to `to`.
-     *
+     * 操作者挖取事件
      * Note that some additional user `data` and `operatorData` can be logged in the event.
      */
     event Minted(address indexed operator, address indexed to, uint256 amount, bytes data, bytes operatorData);
 
     /**
      * @dev Emitted when `operator` destroys `amount` tokens from `account`.
-     *
+     * 操作者销毁事件
      * Note that some additional user `data` and `operatorData` can be logged in the event.
      */
     event Burned(address indexed operator, address indexed from, uint256 amount, bytes data, bytes operatorData);
 
     /**
-     * @dev Emitted when `operator` is made operator for `tokenHolder`
+     * @dev Emitted when `operator` is made operator for `tokenHolder` 代持
      */
     event AuthorizedOperator(address indexed operator, address indexed tokenHolder);
 
     /**
-     * @dev Emitted when `operator` is revoked its operator status for `tokenHolder`
+     * @dev Emitted when `operator` is revoked its operator status for `tokenHolder` 取消代持
      */
     event RevokedOperator(address indexed operator, address indexed tokenHolder);
 
@@ -52,7 +53,7 @@ interface IERC777Upgradeable {
      * @dev Returns the smallest part of the token that is not divisible. This
      * means all token operations (creation, movement and destruction) must have
      * amounts that are a multiple of this number.
-     *
+     * 
      * For most token contracts, this value will equal 1.
      */
     function granularity() external view returns (uint256);
@@ -69,7 +70,7 @@ interface IERC777Upgradeable {
 
     /**
      * @dev Moves `amount` tokens from the caller's account to `recipient`.
-     *
+     * 发送tokne
      * If send or receive hooks are registered for the caller and `recipient`,
      * the corresponding functions will be called with `data` and empty
      * `operatorData`. See {IERC777Sender} and {IERC777Recipient}.
@@ -92,7 +93,7 @@ interface IERC777Upgradeable {
     /**
      * @dev Destroys `amount` tokens from the caller's account, reducing the
      * total supply.
-     *
+     * 销毁
      * If a send hook is registered for the caller, the corresponding function
      * will be called with `data` and empty `operatorData`. See {IERC777Sender}.
      *
@@ -108,14 +109,14 @@ interface IERC777Upgradeable {
      * @dev Returns true if an account is an operator of `tokenHolder`.
      * Operators can send and burn tokens on behalf of their owners. All
      * accounts are their own operator.
-     *
+     * 是否为账户操作者
      * See {operatorSend} and {operatorBurn}.
      */
     function isOperatorFor(address operator, address tokenHolder) external view returns (bool);
 
     /**
      * @dev Make an account an operator of the caller.
-     *
+     * 设置账户操作者
      * See {isOperatorFor}.
      *
      * Emits an {AuthorizedOperator} event.
@@ -128,7 +129,7 @@ interface IERC777Upgradeable {
 
     /**
      * @dev Revoke an account's operator status for the caller.
-     *
+     * 取消账户操作者
      * See {isOperatorFor} and {defaultOperators}.
      *
      * Emits a {RevokedOperator} event.
@@ -143,7 +144,7 @@ interface IERC777Upgradeable {
      * @dev Returns the list of default operators. These accounts are operators
      * for all token holders, even if {authorizeOperator} was never called on
      * them.
-     *
+     * 默认操作者
      * This list is immutable, but individual holders may revoke these via
      * {revokeOperator}, in which case {isOperatorFor} will return false.
      */
@@ -152,7 +153,7 @@ interface IERC777Upgradeable {
     /**
      * @dev Moves `amount` tokens from `sender` to `recipient`. The caller must
      * be an operator of `sender`.
-     *
+     * 运营者，发送token
      * If send or receive hooks are registered for `sender` and `recipient`,
      * the corresponding functions will be called with `data` and
      * `operatorData`. See {IERC777Sender} and {IERC777Recipient}.
@@ -179,7 +180,7 @@ interface IERC777Upgradeable {
     /**
      * @dev Destroys `amount` tokens from `account`, reducing the total supply.
      * The caller must be an operator of `account`.
-     *
+     * 运营者销毁token
      * If a send hook is registered for `account`, the corresponding function
      * will be called with `data` and `operatorData`. See {IERC777Sender}.
      *

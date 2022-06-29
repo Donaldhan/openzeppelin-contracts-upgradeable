@@ -14,7 +14,7 @@ library ArraysUpgradeable {
      * a value greater or equal to `element`. If no such index exists (i.e. all
      * values in the array are strictly less than `element`), the array length is
      * returned. Time complexity O(log n).
-     *
+     * 找出等于给定元素的索引，没有的话，找到大于元素的最接近索引
      * `array` is expected to be sorted in ascending order, and to contain no
      * repeated elements.
      */
@@ -40,6 +40,7 @@ library ArraysUpgradeable {
 
         // At this point `low` is the exclusive upper bound. We will return the inclusive upper bound.
         if (low > 0 && array[low - 1] == element) {
+            //找到元素
             return low - 1;
         } else {
             return low;

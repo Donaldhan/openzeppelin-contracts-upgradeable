@@ -13,7 +13,7 @@ interface IERC1820ImplementerUpgradeable {
     /**
      * @dev Returns a special value (`ERC1820_ACCEPT_MAGIC`) if this contract
      * implements `interfaceHash` for `account`.
-     *
+     * 判断合约实现，是否实现给定的接口
      * See {IERC1820Registry-setInterfaceImplementer}.
      */
     function canImplementInterfaceForAddress(bytes32 interfaceHash, address account) external view returns (bytes32);

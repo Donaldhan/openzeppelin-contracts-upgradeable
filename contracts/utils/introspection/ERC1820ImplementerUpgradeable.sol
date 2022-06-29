@@ -21,10 +21,11 @@ contract ERC1820ImplementerUpgradeable is Initializable, IERC1820ImplementerUpgr
     function __ERC1820Implementer_init_unchained() internal onlyInitializing {
     }
     bytes32 private constant _ERC1820_ACCEPT_MAGIC = keccak256("ERC1820_ACCEPT_MAGIC");
-
+    //接口合约
     mapping(bytes32 => mapping(address => bool)) private _supportedInterfaces;
 
     /**
+     * 是否支持
      * @dev See {IERC1820Implementer-canImplementInterfaceForAddress}.
      */
     function canImplementInterfaceForAddress(bytes32 interfaceHash, address account)
@@ -40,7 +41,7 @@ contract ERC1820ImplementerUpgradeable is Initializable, IERC1820ImplementerUpgr
     /**
      * @dev Declares the contract as willing to be an implementer of
      * `interfaceHash` for `account`.
-     *
+     * 注册实现接口的合约
      * See {IERC1820Registry-setInterfaceImplementer} and
      * {IERC1820Registry-interfaceHash}.
      */
