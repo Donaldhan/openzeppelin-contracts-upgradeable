@@ -9,7 +9,7 @@ pragma solidity ^0.8.0;
 interface IAccessControlUpgradeable {
     /**
      * @dev Emitted when `newAdminRole` is set as ``role``'s admin role, replacing `previousAdminRole`
-     *
+     * 管理员变更
      * `DEFAULT_ADMIN_ROLE` is the starting admin for all roles, despite
      * {RoleAdminChanged} not being emitted signaling this.
      *
@@ -19,7 +19,7 @@ interface IAccessControlUpgradeable {
 
     /**
      * @dev Emitted when `account` is granted `role`.
-     *
+     * 授权角色
      * `sender` is the account that originated the contract call, an admin role
      * bearer except when using {AccessControl-_setupRole}.
      */
@@ -27,7 +27,7 @@ interface IAccessControlUpgradeable {
 
     /**
      * @dev Emitted when `account` is revoked `role`.
-     *
+     * 收回权限
      * `sender` is the account that originated the contract call:
      *   - if using `revokeRole`, it is the admin role bearer
      *   - if using `renounceRole`, it is the role bearer (i.e. `account`)
@@ -42,7 +42,7 @@ interface IAccessControlUpgradeable {
     /**
      * @dev Returns the admin role that controls `role`. See {grantRole} and
      * {revokeRole}.
-     *
+     * 获取角色管理员
      * To change a role's admin, use {AccessControl-_setRoleAdmin}.
      */
     function getRoleAdmin(bytes32 role) external view returns (bytes32);
@@ -52,7 +52,7 @@ interface IAccessControlUpgradeable {
      *
      * If `account` had not been already granted `role`, emits a {RoleGranted}
      * event.
-     *
+     *  授权角色
      * Requirements:
      *
      * - the caller must have ``role``'s admin role.
@@ -61,7 +61,7 @@ interface IAccessControlUpgradeable {
 
     /**
      * @dev Revokes `role` from `account`.
-     *
+     * 收回角色
      * If `account` had been granted `role`, emits a {RoleRevoked} event.
      *
      * Requirements:
@@ -79,7 +79,7 @@ interface IAccessControlUpgradeable {
      *
      * If the calling account had been granted `role`, emits a {RoleRevoked}
      * event.
-     *
+     * 用于角色失去他的超级权限时，调用者收回权限
      * Requirements:
      *
      * - the caller must be `account`.

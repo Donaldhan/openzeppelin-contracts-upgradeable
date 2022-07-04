@@ -7,12 +7,13 @@ import "./IAccessControlUpgradeable.sol";
 
 /**
  * @dev External interface of AccessControlEnumerable declared to support ERC165 detection.
+ * 枚举IAccessControlUpgradeable
  */
 interface IAccessControlEnumerableUpgradeable is IAccessControlUpgradeable {
     /**
      * @dev Returns one of the accounts that have `role`. `index` must be a
      * value between 0 and {getRoleMemberCount}, non-inclusive.
-     *
+     * 获取给定角色的索引成员
      * Role bearers are not sorted in any particular way, and their ordering may
      * change at any point.
      *

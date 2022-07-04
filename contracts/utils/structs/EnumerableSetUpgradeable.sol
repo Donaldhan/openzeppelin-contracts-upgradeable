@@ -55,7 +55,7 @@ library EnumerableSetUpgradeable {
 
     /**
      * @dev Add a value to a set. O(1).
-     *
+     * 添加元素到set，确保不存在
      * Returns true if the value was added to the set, that is if it was not
      * already present.
      */
@@ -73,7 +73,7 @@ library EnumerableSetUpgradeable {
 
     /**
      * @dev Removes a value from a set. O(1).
-     *
+     * 从set移除一个元素
      * Returns true if the value was removed from the set, that is if it was
      * present.
      */
@@ -90,7 +90,7 @@ library EnumerableSetUpgradeable {
             uint256 toDeleteIndex = valueIndex - 1;
             uint256 lastIndex = set._values.length - 1;
 
-            if (lastIndex != toDeleteIndex) {
+            if (lastIndex != toDeleteIndex) {//不为最后一个元素，则交换
                 bytes32 lastValue = set._values[lastIndex];
 
                 // Move the last value to the index where the value to delete is
@@ -102,7 +102,7 @@ library EnumerableSetUpgradeable {
             // Delete the slot where the moved value was stored
             set._values.pop();
 
-            // Delete the index for the deleted slot
+            // Delete the index for the deleted slot 删除索引
             delete set._indexes[value];
 
             return true;

@@ -54,18 +54,18 @@ abstract contract AccessControlUpgradeable is Initializable, ContextUpgradeable,
     function __AccessControl_init_unchained() internal onlyInitializing {
     }
     struct RoleData {
-        mapping(address => bool) members;
-        bytes32 adminRole;
+        mapping(address => bool) members;//成员
+        bytes32 adminRole;//角色管理员
     }
 
-    mapping(bytes32 => RoleData) private _roles;
+    mapping(bytes32 => RoleData) private _roles; //角色数据
 
-    bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
+    bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00; //默认管理员角色
 
     /**
      * @dev Modifier that checks that an account has a specific role. Reverts
      * with a standardized message including the required role.
-     *
+     * 角色检查
      * The format of the revert reason is given by the following regular expression:
      *
      *  /^AccessControl: account (0x[0-9a-f]{40}) is missing role (0x[0-9a-f]{64})$/
@@ -105,7 +105,7 @@ abstract contract AccessControlUpgradeable is Initializable, ContextUpgradeable,
 
     /**
      * @dev Revert with a standard message if `account` is missing `role`.
-     *
+     * 如果角色没有权限，则revert
      * The format of the revert reason is given by the following regular expression:
      *
      *  /^AccessControl: account (0x[0-9a-f]{40}) is missing role (0x[0-9a-f]{64})$/
@@ -128,7 +128,7 @@ abstract contract AccessControlUpgradeable is Initializable, ContextUpgradeable,
     /**
      * @dev Returns the admin role that controls `role`. See {grantRole} and
      * {revokeRole}.
-     *
+     * 获取角色管理员
      * To change a role's admin, use {_setRoleAdmin}.
      */
     function getRoleAdmin(bytes32 role) public view virtual override returns (bytes32) {
@@ -168,7 +168,7 @@ abstract contract AccessControlUpgradeable is Initializable, ContextUpgradeable,
 
     /**
      * @dev Revokes `role` from the calling account.
-     *
+     * 自己可以收回自己的权限
      * Roles are often managed via {grantRole} and {revokeRole}: this function's
      * purpose is to provide a mechanism for accounts to lose their privileges
      * if they are compromised (such as when a trusted device is misplaced).
@@ -214,7 +214,7 @@ abstract contract AccessControlUpgradeable is Initializable, ContextUpgradeable,
 
     /**
      * @dev Sets `adminRole` as ``role``'s admin role.
-     *
+     * 设置角色管理员
      * Emits a {RoleAdminChanged} event.
      */
     function _setRoleAdmin(bytes32 role, bytes32 adminRole) internal virtual {
@@ -225,7 +225,7 @@ abstract contract AccessControlUpgradeable is Initializable, ContextUpgradeable,
 
     /**
      * @dev Grants `role` to `account`.
-     *
+     * 授权
      * Internal function without access restriction.
      *
      * May emit a {RoleGranted} event.
@@ -239,7 +239,7 @@ abstract contract AccessControlUpgradeable is Initializable, ContextUpgradeable,
 
     /**
      * @dev Revokes `role` from `account`.
-     *
+     * 收回
      * Internal function without access restriction.
      *
      * May emit a {RoleRevoked} event.
