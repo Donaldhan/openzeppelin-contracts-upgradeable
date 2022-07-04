@@ -6,6 +6,7 @@ pragma solidity ^0.8.0;
 import "../../utils/introspection/IERC165Upgradeable.sol";
 
 /**
+ * IERC1155接受者合约
  * @dev _Available since v3.1._
  */
 interface IERC1155ReceiverUpgradeable is IERC165Upgradeable {
@@ -22,7 +23,7 @@ interface IERC1155ReceiverUpgradeable is IERC165Upgradeable {
      * @param id The ID of the token being transferred
      * @param value The amount of tokens being transferred
      * @param data Additional data with no specified format
-     * @return `bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"))` if transfer is allowed
+     * @return `bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"))` if transfer is allowed 转移允许，返回方法选择器
      */
     function onERC1155Received(
         address operator,
@@ -46,7 +47,7 @@ interface IERC1155ReceiverUpgradeable is IERC165Upgradeable {
      * @param ids An array containing ids of each token being transferred (order and length must match values array)
      * @param values An array containing amounts of each token being transferred (order and length must match ids array)
      * @param data Additional data with no specified format
-     * @return `bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"))` if transfer is allowed
+     * @return `bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"))` if transfer is allowed  转移允许，返回方法选择器
      */
     function onERC1155BatchReceived(
         address operator,

@@ -32,14 +32,15 @@ contract ERC777Upgradeable is Initializable, ContextUpgradeable, IERC777Upgradea
 
     IERC1820RegistryUpgradeable internal constant _ERC1820_REGISTRY = IERC1820RegistryUpgradeable(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
 
-    mapping(address => uint256) private _balances;
+    mapping(address => uint256) private _balances;//余额
 
     uint256 private _totalSupply;
 
     string private _name;
     string private _symbol;
-
+    //token发送者接口hash
     bytes32 private constant _TOKENS_SENDER_INTERFACE_HASH = keccak256("ERC777TokensSender");
+    //token接受者接口hash
     bytes32 private constant _TOKENS_RECIPIENT_INTERFACE_HASH = keccak256("ERC777TokensRecipient");
 
     // This isn't ever read from - it's only used to respond to the defaultOperators query.
@@ -49,10 +50,10 @@ contract ERC777Upgradeable is Initializable, ContextUpgradeable, IERC777Upgradea
     mapping(address => bool) private _defaultOperators;
 
     // For each account, a mapping of its operators and revoked default operators.
-    mapping(address => mapping(address => bool)) private _operators;
-    mapping(address => mapping(address => bool)) private _revokedDefaultOperators;
+    mapping(address => mapping(address => bool)) private _operators; //账户操作者
+    mapping(address => mapping(address => bool)) private _revokedDefaultOperators; //撤销默认运营者
 
-    // ERC20-allowances
+    // ERC20-allowances 20 授权金额
     mapping(address => mapping(address => uint256)) private _allowances;
 
     /**
@@ -69,17 +70,17 @@ contract ERC777Upgradeable is Initializable, ContextUpgradeable, IERC777Upgradea
     function __ERC777_init_unchained(
         string memory name_,
         string memory symbol_,
-        address[] memory defaultOperators_
+        address[] memory defaultOperators_ 
     ) internal onlyInitializing {
         _name = name_;
         _symbol = symbol_;
-
+        //默认操作者 
         _defaultOperatorsArray = defaultOperators_;
         for (uint256 i = 0; i < defaultOperators_.length; i++) {
             _defaultOperators[defaultOperators_[i]] = true;
         }
 
-        // register interfaces
+        // register interfaces，  注册接口
         _ERC1820_REGISTRY.setInterfaceImplementer(address(this), keccak256("ERC777Token"), address(this));
         _ERC1820_REGISTRY.setInterfaceImplementer(address(this), keccak256("ERC20Token"), address(this));
     }
@@ -110,7 +111,7 @@ contract ERC777Upgradeable is Initializable, ContextUpgradeable, IERC777Upgradea
 
     /**
      * @dev See {IERC777-granularity}.
-     *
+     * 数量粒度
      * This implementation always returns `1`.
      */
     function granularity() public view virtual override returns (uint256) {
@@ -167,6 +168,7 @@ contract ERC777Upgradeable is Initializable, ContextUpgradeable, IERC777Upgradea
     }
 
     /**
+     * operator是否可以操作tokenHolder账户
      * @dev See {IERC777-isOperatorFor}.
      */
     function isOperatorFor(address operator, address tokenHolder) public view virtual override returns (bool) {
@@ -177,6 +179,7 @@ contract ERC777Upgradeable is Initializable, ContextUpgradeable, IERC777Upgradea
     }
 
     /**
+     * 授权操作者账号
      * @dev See {IERC777-authorizeOperator}.
      */
     function authorizeOperator(address operator) public virtual override {
@@ -192,6 +195,7 @@ contract ERC777Upgradeable is Initializable, ContextUpgradeable, IERC777Upgradea
     }
 
     /**
+     * 取消授权
      * @dev See {IERC777-revokeOperator}.
      */
     function revokeOperator(address operator) public virtual override {
@@ -246,7 +250,7 @@ contract ERC777Upgradeable is Initializable, ContextUpgradeable, IERC777Upgradea
 
     /**
      * @dev See {IERC20-allowance}.
-     *
+     * 授权值
      * Note that operator and allowance concepts are orthogonal: operators may
      * not have allowance, and accounts with allowance may not be operators
      * themselves.
@@ -257,7 +261,7 @@ contract ERC777Upgradeable is Initializable, ContextUpgradeable, IERC777Upgradea
 
     /**
      * @dev See {IERC20-approve}.
-     *
+     * 授权
      * NOTE: If `value` is the maximum `uint256`, the allowance is not updated on
      * `transferFrom`. This is semantically equivalent to an infinite approval.
      *
@@ -322,7 +326,7 @@ contract ERC777Upgradeable is Initializable, ContextUpgradeable, IERC777Upgradea
     /**
      * @dev Creates `amount` tokens and assigns them to `account`, increasing
      * the total supply.
-     *
+     * 挖token
      * If `requireReceptionAck` is set to true, and if a send hook is
      * registered for `account`, the corresponding function will be called with
      * `operator`, `data` and `operatorData`.
@@ -421,7 +425,9 @@ contract ERC777Upgradeable is Initializable, ContextUpgradeable, IERC777Upgradea
         emit Burned(operator, from, amount, data, operatorData);
         emit Transfer(from, address(0), amount);
     }
-
+    /**
+     * 从一个账号到另外一个账号
+     */
     function _move(
         address operator,
         address from,
@@ -445,7 +451,7 @@ contract ERC777Upgradeable is Initializable, ContextUpgradeable, IERC777Upgradea
 
     /**
      * @dev See {ERC20-_approve}.
-     *
+     * 授权
      * Note that accounts cannot have allowance issued by their operators.
      */
     function _approve(
@@ -513,7 +519,7 @@ contract ERC777Upgradeable is Initializable, ContextUpgradeable, IERC777Upgradea
 
     /**
      * @dev Updates `owner` s allowance for `spender` based on spent `amount`.
-     *
+     * 花销
      * Does not update the allowance amount in case of infinite allowance.
      * Revert if not enough allowance is available.
      *

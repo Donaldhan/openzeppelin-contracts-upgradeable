@@ -13,7 +13,7 @@ import "../../../proxy/utils/Initializable.sol";
  * Useful for scenarios such as preventing trades until the end of an evaluation
  * period, or having an emergency switch for freezing all token transfers in the
  * event of a large bug.
- *
+ * 可暂停的ERC1155
  * _Available since v3.1._
  */
 abstract contract ERC1155PausableUpgradeable is Initializable, ERC1155Upgradeable, PausableUpgradeable {

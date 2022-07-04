@@ -49,7 +49,7 @@ library EnumerableSetUpgradeable {
         // Storage of set values
         bytes32[] _values;
         // Position of the value in the `values` array, plus 1 because index 0
-        // means a value is not in the set.
+        // means a value is not in the set.， 值索引，默认为在数组中的位置+1，0表示，不在集合中
         mapping(bytes32 => uint256) _indexes;
     }
 

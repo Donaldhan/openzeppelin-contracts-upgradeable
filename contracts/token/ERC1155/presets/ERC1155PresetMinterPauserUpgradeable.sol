@@ -14,8 +14,8 @@ import "../../../proxy/utils/Initializable.sol";
  * @dev {ERC1155} token, including:
  *
  *  - ability for holders to burn (destroy) their tokens
- *  - a minter role that allows for token minting (creation)
- *  - a pauser role that allows to stop all token transfers
+ *  - a minter role that allows for token minting (creation)  挖矿角色
+ *  - a pauser role that allows to stop all token transfers 暂停角色
  *
  * This contract uses {AccessControl} to lock permissioned functions using the
  * different roles - head to its documentation for details.
@@ -30,7 +30,9 @@ contract ERC1155PresetMinterPauserUpgradeable is Initializable, ContextUpgradeab
     function initialize(string memory uri) public virtual initializer {
         __ERC1155PresetMinterPauser_init(uri);
     }
+    //挖矿角色
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    //暂停角色
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
     /**
@@ -44,9 +46,11 @@ contract ERC1155PresetMinterPauserUpgradeable is Initializable, ContextUpgradeab
     }
 
     function __ERC1155PresetMinterPauser_init_unchained(string memory) internal onlyInitializing {
+        //默认管理员角色
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-
+        //挖矿角色
         _setupRole(MINTER_ROLE, _msgSender());
+        //暂停角色
         _setupRole(PAUSER_ROLE, _msgSender());
     }
 
@@ -54,7 +58,7 @@ contract ERC1155PresetMinterPauserUpgradeable is Initializable, ContextUpgradeab
      * @dev Creates `amount` new tokens for `to`, of token type `id`.
      *
      * See {ERC1155-_mint}.
-     *
+     * 需要挖矿者，才可以挖
      * Requirements:
      *
      * - the caller must have the `MINTER_ROLE`.
@@ -88,7 +92,7 @@ contract ERC1155PresetMinterPauserUpgradeable is Initializable, ContextUpgradeab
      * @dev Pauses all token transfers.
      *
      * See {ERC1155Pausable} and {Pausable-_pause}.
-     *
+     * 暂停
      * Requirements:
      *
      * - the caller must have the `PAUSER_ROLE`.
@@ -100,7 +104,7 @@ contract ERC1155PresetMinterPauserUpgradeable is Initializable, ContextUpgradeab
 
     /**
      * @dev Unpauses all token transfers.
-     *
+     * 恢复
      * See {ERC1155Pausable} and {Pausable-_unpause}.
      *
      * Requirements:

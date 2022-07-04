@@ -21,10 +21,10 @@ import "../../proxy/utils/Initializable.sol";
 contract ERC1155Upgradeable is Initializable, ContextUpgradeable, ERC165Upgradeable, IERC1155Upgradeable, IERC1155MetadataURIUpgradeable {
     using AddressUpgradeable for address;
 
-    // Mapping from token ID to account balances
+    // Mapping from token ID to account balances 账户余额， tokenId对应的账户余额
     mapping(uint256 => mapping(address => uint256)) private _balances;
 
-    // Mapping from account to operator approvals
+    // Mapping from account to operator approvals 授权账户余额
     mapping(address => mapping(address => bool)) private _operatorApprovals;
 
     // Used as the URI for all token types by relying on ID substitution, e.g. https://token-cdn-domain/{id}.json
@@ -178,10 +178,16 @@ contract ERC1155Upgradeable is Initializable, ContextUpgradeable, ERC165Upgradea
         _beforeTokenTransfer(operator, from, to, ids, amounts, data);
 
         uint256 fromBalance = _balances[id][from];
+        /**
+         * https://learnblockchain.cn/docs/solidity/control-structures.html
+         */
+        //有了前置检查
         require(fromBalance >= amount, "ERC1155: insufficient balance for transfer");
+        //有了前置检查， 不做溢出检查，节省gas，保证solidyt8.0溢出后的截断效果
         unchecked {
             _balances[id][from] = fromBalance - amount;
         }
+        //要进行溢出检查，8.0以后，都会进行溢出检查
         _balances[id][to] += amount;
 
         emit TransferSingle(operator, from, to, id, amount);
@@ -468,7 +474,9 @@ contract ERC1155Upgradeable is Initializable, ContextUpgradeable, ERC165Upgradea
         uint256[] memory amounts,
         bytes memory data
     ) internal virtual {}
-
+    /**
+     * 接受者安全检查
+     */
     function _doSafeTransferAcceptanceCheck(
         address operator,
         address from,
@@ -489,7 +497,9 @@ contract ERC1155Upgradeable is Initializable, ContextUpgradeable, ERC165Upgradea
             }
         }
     }
-
+    /**
+     * 接受者安全检查
+     */
     function _doSafeBatchTransferAcceptanceCheck(
         address operator,
         address from,

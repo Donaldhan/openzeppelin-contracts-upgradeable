@@ -10,6 +10,7 @@ import "../proxy/utils/Initializable.sol";
 
 /**
  * @dev Extension of {AccessControl} that allows enumerating the members of each role.
+ * 访问控制成员
  */
 abstract contract AccessControlEnumerableUpgradeable is Initializable, IAccessControlEnumerableUpgradeable, AccessControlUpgradeable {
     function __AccessControlEnumerable_init() internal onlyInitializing {
@@ -18,8 +19,8 @@ abstract contract AccessControlEnumerableUpgradeable is Initializable, IAccessCo
     function __AccessControlEnumerable_init_unchained() internal onlyInitializing {
     }
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
-
-    mapping(bytes32 => EnumerableSetUpgradeable.AddressSet) private _roleMembers;
+    //角色成员
+    mapping(bytes32 => EnumerableSetUpgradeable.AddressSet) private _roleMembers; 
 
     /**
      * @dev See {IERC165-supportsInterface}.
