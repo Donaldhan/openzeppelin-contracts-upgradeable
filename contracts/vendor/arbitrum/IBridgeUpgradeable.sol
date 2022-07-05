@@ -34,13 +34,15 @@ interface IBridgeUpgradeable {
     event InboxToggle(address indexed inbox, bool enabled);
 
     event OutboxToggle(address indexed outbox, bool enabled);
-
+    /**
+     */
     function deliverMessageToInbox(
         uint8 kind,
         address sender,
         bytes32 messageDataHash
     ) external payable returns (uint256);
-
+    /**
+     */
     function executeCall(
         address destAddr,
         uint256 amount,

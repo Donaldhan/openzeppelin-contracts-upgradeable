@@ -27,6 +27,7 @@ abstract contract CrossChainEnabledUpgradeable is Initializable {
     /**
      * @dev Throws if the current function call is not the result of a
      * cross-chain execution.
+     * 如果当前功能调用，不是跨链执行结果
      */
     modifier onlyCrossChain() {
         if (!_isCrossChain()) revert NotCrossChainCall();
@@ -36,6 +37,7 @@ abstract contract CrossChainEnabledUpgradeable is Initializable {
     /**
      * @dev Throws if the current function call is not the result of a
      * cross-chain execution initiated by `account`.
+     * 如果当前调用不是给定的账户，则抛出
      */
     modifier onlyCrossChainSender(address expected) {
         address actual = _crossChainSender();
@@ -46,13 +48,14 @@ abstract contract CrossChainEnabledUpgradeable is Initializable {
     /**
      * @dev Returns whether the current function call is the result of a
      * cross-chain message.
+     * 是否为跨链消息
      */
     function _isCrossChain() internal view virtual returns (bool);
 
     /**
      * @dev Returns the address of the sender of the cross-chain message that
      * triggered the current function call.
-     *
+     * 返回当前触发当前方法调用的跨链消息发送者
      * IMPORTANT: Should revert with `NotCrossChainCall` if the current function
      * call is not the result of a cross-chain message.
      */

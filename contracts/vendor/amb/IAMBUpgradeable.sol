@@ -12,7 +12,9 @@ interface IAMBUpgradeable {
         bool status
     );
     event RelayedMessage(address indexed sender, address indexed executor, bytes32 indexed messageId, bool status);
-
+    /**
+     * 消息发送者
+     */
     function messageSender() external view returns (address);
 
     function maxGasPerTx() external view returns (uint256);
@@ -30,20 +32,26 @@ interface IAMBUpgradeable {
     function failedMessageReceiver(bytes32 _messageId) external view returns (address);
 
     function failedMessageSender(bytes32 _messageId) external view returns (address);
-
+    /**
+     */
     function requireToPassMessage(
         address _contract,
         bytes calldata _data,
         uint256 _gas
     ) external returns (bytes32);
-
+    /**
+     */
     function requireToConfirmMessage(
         address _contract,
         bytes calldata _data,
         uint256 _gas
     ) external returns (bytes32);
-
+    /**
+     * 源链id
+     */
     function sourceChainId() external view returns (uint256);
-
+    /**
+     * 目标链id
+     */
     function destinationChainId() external view returns (uint256);
 }

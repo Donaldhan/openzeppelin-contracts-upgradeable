@@ -17,7 +17,9 @@ interface ICrossDomainMessengerUpgradeable {
     /*************
      * Variables *
      *************/
-
+    /**
+     * 域名消息发送者
+     */
     function xDomainMessageSender() external view returns (address);
 
     /********************
@@ -26,6 +28,7 @@ interface ICrossDomainMessengerUpgradeable {
 
     /**
      * Sends a cross domain message to the target messenger.
+     * 发送一个跨链域名消息到目标消息者
      * @param _target Target contract address.
      * @param _message Message to send to the target.
      * @param _gasLimit Gas limit for the provided message.

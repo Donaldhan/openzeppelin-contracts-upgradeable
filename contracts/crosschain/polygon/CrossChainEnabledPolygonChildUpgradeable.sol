@@ -9,12 +9,15 @@ import "../../utils/AddressUpgradeable.sol";
 import "../../vendor/polygon/IFxMessageProcessorUpgradeable.sol";
 import "../../proxy/utils/Initializable.sol";
 
+/**
+ * 默认发送者
+ */
 address constant DEFAULT_SENDER = 0x000000000000000000000000000000000000dEaD;
 
 /**
  * @dev https://polygon.technology/[Polygon] specialization or the
  * {CrossChainEnabled} abstraction the child side (polygon/mumbai).
- *
+ * 侧链抽象合约CrossChainEnabled
  * This version should only be deployed on child chain to process cross-chain
  * messages originating from the parent chain.
  *
@@ -35,6 +38,7 @@ abstract contract CrossChainEnabledPolygonChildUpgradeable is Initializable, IFx
     }
 
     /**
+     * 是否为跨链
      * @dev see {CrossChainEnabled-_isCrossChain}
      */
     function _isCrossChain() internal view virtual override returns (bool) {
@@ -42,6 +46,7 @@ abstract contract CrossChainEnabledPolygonChildUpgradeable is Initializable, IFx
     }
 
     /**
+     * 跨链发送者
      * @dev see {CrossChainEnabled-_crossChainSender}
      */
     function _crossChainSender() internal view virtual override onlyCrossChain returns (address) {
@@ -51,11 +56,12 @@ abstract contract CrossChainEnabledPolygonChildUpgradeable is Initializable, IFx
     /**
      * @dev External entry point to receive and relay messages originating
      * from the fxChild.
-     *
+     * 外部从源之于fxChild的中继或接受的消息
      * Non-reentrancy is crucial to avoid a cross-chain call being able
      * to impersonate anyone by just looping through this with user-defined
      * arguments.
-     *
+     *  
+     * 不可重入对于避免跨链调用至关重要，通过用户定义的循环来模拟任何人论据
      * Note: if _fxChild calls any other function that does a delegate-call,
      * then security could be compromised.
      */
@@ -64,11 +70,13 @@ abstract contract CrossChainEnabledPolygonChildUpgradeable is Initializable, IFx
         address rootMessageSender,
         bytes calldata data
     ) external override nonReentrant {
+        //检查跨链
         if (!_isCrossChain()) revert NotCrossChainCall();
 
-        _sender = rootMessageSender;
+        _sender = rootMessageSender;//消息发送者
+        //调用代理地址
         __functionDelegateCall(address(this), data);
-        _sender = DEFAULT_SENDER;
+        _sender = DEFAULT_SENDER;//重置为默认发送者
     }
 
     // ERC1967Upgrade._functionDelegateCall is private so we reproduce it here.
@@ -76,7 +84,7 @@ abstract contract CrossChainEnabledPolygonChildUpgradeable is Initializable, IFx
     function __functionDelegateCall(address target, bytes memory data) private returns (bytes memory) {
         require(AddressUpgradeable.isContract(target), "Address: delegate call to non-contract");
 
-        // solhint-disable-next-line avoid-low-level-calls
+        // solhint-disable-next-line avoid-low-level-calls， 代理调用
         (bool success, bytes memory returndata) = target.delegatecall(data);
         return AddressUpgradeable.verifyCallResult(success, returndata, "Address: low-level delegate call failed");
     }

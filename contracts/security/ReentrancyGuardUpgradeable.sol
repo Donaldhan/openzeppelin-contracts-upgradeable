@@ -10,7 +10,7 @@ import "../proxy/utils/Initializable.sol";
  * Inheriting from `ReentrancyGuard` will make the {nonReentrant} modifier
  * available, which can be applied to functions to make sure there are no nested
  * (reentrant) calls to them.
- *
+ * 可重入锁
  * Note that because there is a single `nonReentrant` guard, functions marked as
  * `nonReentrant` may not call one another. This can be worked around by making
  * those functions `private`, and then adding `external` `nonReentrant` entry

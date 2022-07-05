@@ -23,7 +23,9 @@ import "./IMessageProviderUpgradeable.sol";
 
 interface IInboxUpgradeable is IMessageProviderUpgradeable {
     function sendL2Message(bytes calldata messageData) external returns (uint256);
-
+    /** 
+     * 发送无签名交易
+     */
     function sendUnsignedTransaction(
         uint256 maxGas,
         uint256 gasPriceBid,
@@ -32,7 +34,9 @@ interface IInboxUpgradeable is IMessageProviderUpgradeable {
         uint256 amount,
         bytes calldata data
     ) external returns (uint256);
-
+    /**
+     * 发送合约交易
+     */
     function sendContractTransaction(
         uint256 maxGas,
         uint256 gasPriceBid,
@@ -77,9 +81,13 @@ interface IInboxUpgradeable is IMessageProviderUpgradeable {
         uint256 gasPriceBid,
         bytes calldata data
     ) external payable returns (uint256);
-
+    /** 
+     * 质押eth
+     */
     function depositEth(uint256 maxSubmissionCost) external payable returns (uint256);
-
+    /** 
+     * 桥地址
+     */
     function bridge() external view returns (address);
 
     function pauseCreateRetryables() external;

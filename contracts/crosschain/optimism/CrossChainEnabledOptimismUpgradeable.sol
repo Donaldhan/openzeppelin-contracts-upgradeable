@@ -27,6 +27,7 @@ abstract contract CrossChainEnabledOptimismUpgradeable is Initializable, CrossCh
     }
 
     /**
+     * 是否为跨链调用
      * @dev see {CrossChainEnabled-_isCrossChain}
      */
     function _isCrossChain() internal view virtual override returns (bool) {
@@ -34,6 +35,7 @@ abstract contract CrossChainEnabledOptimismUpgradeable is Initializable, CrossCh
     }
 
     /**
+     * 跨链调用者
      * @dev see {CrossChainEnabled-_crossChainSender}
      */
     function _crossChainSender() internal view virtual override onlyCrossChain returns (address) {

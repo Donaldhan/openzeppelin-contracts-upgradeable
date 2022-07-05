@@ -28,7 +28,8 @@ abstract contract AccessControlCrossChainUpgradeable is Initializable, AccessCon
     }
 
     function __AccessControlCrossChain_init_unchained() internal onlyInitializing {
-    }
+    } 
+    //跨链别名
     bytes32 public constant CROSSCHAIN_ALIAS = keccak256("CROSSCHAIN_ALIAS");
 
     /**
@@ -43,6 +44,7 @@ abstract contract AccessControlCrossChainUpgradeable is Initializable, AccessCon
     }
 
     /**
+     * 返回相关角色的跨链角色别名
      * @dev Returns the aliased role corresponding to `role`.
      */
     function _crossChainRoleAlias(bytes32 role) internal pure virtual returns (bytes32) {

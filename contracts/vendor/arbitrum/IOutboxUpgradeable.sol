@@ -33,19 +33,43 @@ interface IOutboxUpgradeable {
         uint256 transactionIndex
     );
 
+    /**
+     * L2到L1 发送者
+     */
     function l2ToL1Sender() external view returns (address);
 
+    /**
+     *  L2到L1 区块
+     */
     function l2ToL1Block() external view returns (uint256);
 
+    /**
+     *L2到L1 以太坊区块
+     */
     function l2ToL1EthBlock() external view returns (uint256);
 
+    /**
+     **L2到L1 时间戳
+     */
     function l2ToL1Timestamp() external view returns (uint256);
 
+    /**
+     *
+     */
     function l2ToL1BatchNum() external view returns (uint256);
 
+    /**
+     *
+     */
     function l2ToL1OutputId() external view returns (bytes32);
 
+    /**
+     *
+     */
     function processOutgoingMessages(bytes calldata sendsData, uint256[] calldata sendLengths) external;
 
+    /**
+     *
+     */
     function outboxEntryExists(uint256 batchNum) external view returns (bool);
 }

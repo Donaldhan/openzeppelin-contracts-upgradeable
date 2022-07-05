@@ -15,6 +15,7 @@ library LibOptimismUpgradeable {
     /**
      * @dev Returns whether the current function call is the result of a
      * cross-chain message relayed by `messenger`.
+     * 是否为跨链
      */
     function isCrossChain(address messenger) internal view returns (bool) {
         return msg.sender == messenger;
@@ -23,7 +24,7 @@ library LibOptimismUpgradeable {
     /**
      * @dev Returns the address of the sender that triggered the current
      * cross-chain message through `messenger`.
-     *
+     * 返回触发当前跨链消息的发送者
      * NOTE: {isCrossChain} should be checked before trying to recover the
      * sender, as it will revert with `NotCrossChainCall` if the current
      * function call is not the result of a cross-chain message.

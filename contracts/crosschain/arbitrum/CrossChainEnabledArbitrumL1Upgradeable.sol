@@ -21,7 +21,7 @@ import "../../proxy/utils/Initializable.sol";
  * _Available since v4.6._
  */
 abstract contract CrossChainEnabledArbitrumL1Upgradeable is Initializable, CrossChainEnabledUpgradeable {
-    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable 桥地址
     address private immutable _bridge;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
