@@ -51,7 +51,7 @@ library AddressUpgradeable {
      * imposed by `transfer`, making them unable to receive funds via
      * `transfer`. {sendValue} removes this limitation.
      *  EIP1884协议增加确定操作的gas，使send和transfer的操作gas可能大于2300。建议使用
-     *  (bool success, ) = recipient.call{value: amount}("");
+     *  (bool success, ) = recipient.call{value: amount}("");方式，进行check
      * [停止使用Solidity的transfer()](https://www.zhihu.com/search?type=content&q=eip-1884)
      * https://diligence.consensys.net/posts/2019/09/stop-using-soliditys-transfer-now/[Learn more].
      * 细究以太坊中send/transfer/call/delegatecall：https://zhuanlan.zhihu.com/p/35292014
