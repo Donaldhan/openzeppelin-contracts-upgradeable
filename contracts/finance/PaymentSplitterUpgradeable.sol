@@ -25,22 +25,32 @@ import "../proxy/utils/Initializable.sol";
  * NOTE: This contract assumes that ERC20 tokens will behave similarly to native tokens (Ether). Rebasing tokens, and
  * tokens that apply fees during transfers, are likely to not be supported as expected. If in doubt, we encourage you
  * to run tests before sending real value to this contract.
+ * 分账合约；
+ * 创建 ERC20 代币支付拆分智能合约:https://btc.business/Show/index/cid/23/id/125892.html
+ * 假如有三个人共同开了一个网店，网店的所有收入通过PaymentSplitter合约保存。
+ * 其他人可在这个网店Dapp的前端付款，将ether转到这个合约里。开网店的三个人在合约里都有一定的股份持有数，
+ * 基于这个股份数，可计算出每个人可以从这个合约里取出多少ether。
+ * OpenZeppelin 2.0 基础合约详解二：https://www.modb.pro/db/191359
  */
 contract PaymentSplitterUpgradeable is Initializable, ContextUpgradeable {
+    //添加收款者账号
     event PayeeAdded(address account, uint256 shares);
+    //收款时间
     event PaymentReleased(address to, uint256 amount);
+    //ERC20收款事件
     event ERC20PaymentReleased(IERC20Upgradeable indexed token, address to, uint256 amount);
+    //收款
     event PaymentReceived(address from, uint256 amount);
 
-    uint256 private _totalShares;
-    uint256 private _totalReleased;
+    uint256 private _totalShares;//提供来自所有收款人的份额相加
+    uint256 private _totalReleased;//已支付给所有收款人的支付代币总额
 
-    mapping(address => uint256) private _shares;
-    mapping(address => uint256) private _released;
-    address[] private _payees;
+    mapping(address => uint256) private _shares;//收款人地址与分配给他们的份额数量的映射
+    mapping(address => uint256) private _released;//收款人地址到支付代币数量的映射，ETH
+    address[] private _payees;//提供了当前所有收款人地址的数组
 
-    mapping(IERC20Upgradeable => uint256) private _erc20TotalReleased;
-    mapping(IERC20Upgradeable => mapping(address => uint256)) private _erc20Released;
+    mapping(IERC20Upgradeable => uint256) private _erc20TotalReleased;//已经收款的ERC20 Token
+    mapping(IERC20Upgradeable => mapping(address => uint256)) private _erc20Released;// 已经收款的ERC20的收款账户余额
 
     /**
      * @dev Creates an instance of `PaymentSplitter` where each account in `payees` is assigned the number of shares at
@@ -52,7 +62,9 @@ contract PaymentSplitterUpgradeable is Initializable, ContextUpgradeable {
     function __PaymentSplitter_init(address[] memory payees, uint256[] memory shares_) internal onlyInitializing {
         __PaymentSplitter_init_unchained(payees, shares_);
     }
-
+    /**
+     * 初始化收款者及相应的股份份额
+     */
     function __PaymentSplitter_init_unchained(address[] memory payees, uint256[] memory shares_) internal onlyInitializing {
         require(payees.length == shares_.length, "PaymentSplitter: payees and shares length mismatch");
         require(payees.length > 0, "PaymentSplitter: no payees");
@@ -66,7 +78,7 @@ contract PaymentSplitterUpgradeable is Initializable, ContextUpgradeable {
      * @dev The Ether received will be logged with {PaymentReceived} events. Note that these events are not fully
      * reliable: it's possible for a contract to receive Ether without triggering this function. This only affects the
      * reliability of the events, and not the actual splitting of Ether.
-     *
+     * 付款以太币
      * To learn more about this see the Solidity documentation for
      * https://solidity.readthedocs.io/en/latest/contracts.html#fallback-function[fallback
      * functions].
@@ -90,7 +102,7 @@ contract PaymentSplitterUpgradeable is Initializable, ContextUpgradeable {
     }
 
     /**
-     * @dev Getter for the total amount of `token` already released. `token` should be the address of an IERC20
+     * @dev Getter for the total amount of `token` already released. `token` should be the address of an IERC20 ERC20总进账
      * contract.
      */
     function totalReleased(IERC20Upgradeable token) public view returns (uint256) {
@@ -98,14 +110,14 @@ contract PaymentSplitterUpgradeable is Initializable, ContextUpgradeable {
     }
 
     /**
-     * @dev Getter for the amount of shares held by an account.
+     * @dev Getter for the amount of shares held by an account. 账户股份
      */
     function shares(address account) public view returns (uint256) {
         return _shares[account];
     }
 
     /**
-     * @dev Getter for the amount of Ether already released to a payee.
+     * @dev Getter for the amount of Ether already released to a payee. 账户收款金额
      */
     function released(address account) public view returns (uint256) {
         return _released[account];
@@ -113,7 +125,7 @@ contract PaymentSplitterUpgradeable is Initializable, ContextUpgradeable {
 
     /**
      * @dev Getter for the amount of `token` tokens already released to a payee. `token` should be the address of an
-     * IERC20 contract.
+     * IERC20 contract. 账户ERC20 Token的数量
      */
     function released(IERC20Upgradeable token, address account) public view returns (uint256) {
         return _erc20Released[token][account];
@@ -128,6 +140,7 @@ contract PaymentSplitterUpgradeable is Initializable, ContextUpgradeable {
 
     /**
      * @dev Getter for the amount of payee's releasable Ether.
+     * 获取账户可获取的ETH数量
      */
     function releasable(address account) public view returns (uint256) {
         uint256 totalReceived = address(this).balance + totalReleased();
@@ -137,6 +150,7 @@ contract PaymentSplitterUpgradeable is Initializable, ContextUpgradeable {
     /**
      * @dev Getter for the amount of payee's releasable `token` tokens. `token` should be the address of an
      * IERC20 contract.
+     * 获取账户可获取的ERC20数量
      */
     function releasable(IERC20Upgradeable token, address account) public view returns (uint256) {
         uint256 totalReceived = token.balanceOf(address(this)) + totalReleased(token);
@@ -146,17 +160,19 @@ contract PaymentSplitterUpgradeable is Initializable, ContextUpgradeable {
     /**
      * @dev Triggers a transfer to `account` of the amount of Ether they are owed, according to their percentage of the
      * total shares and their previous withdrawals.
+     * 分账打款份额收益ETH到给定账号
      */
     function release(address payable account) public virtual {
         require(_shares[account] > 0, "PaymentSplitter: account has no shares");
 
+        //当前分得的eth 
         uint256 payment = releasable(account);
 
         require(payment != 0, "PaymentSplitter: account is not due payment");
 
         _released[account] += payment;
         _totalReleased += payment;
-
+        //向地址转ETH
         AddressUpgradeable.sendValue(account, payment);
         emit PaymentReleased(account, payment);
     }
@@ -165,17 +181,18 @@ contract PaymentSplitterUpgradeable is Initializable, ContextUpgradeable {
      * @dev Triggers a transfer to `account` of the amount of `token` tokens they are owed, according to their
      * percentage of the total shares and their previous withdrawals. `token` must be the address of an IERC20
      * contract.
+     * 分账，打款份额收益ERC20到对应账户
      */
     function release(IERC20Upgradeable token, address account) public virtual {
         require(_shares[account] > 0, "PaymentSplitter: account has no shares");
-
+        ////当前分得的eth 
         uint256 payment = releasable(token, account);
 
         require(payment != 0, "PaymentSplitter: account is not due payment");
 
         _erc20Released[token][account] += payment;
         _erc20TotalReleased[token] += payment;
-
+        //向地址转ERC20 Token
         SafeERC20Upgradeable.safeTransfer(token, account, payment);
         emit ERC20PaymentReleased(token, account, payment);
     }
@@ -183,6 +200,7 @@ contract PaymentSplitterUpgradeable is Initializable, ContextUpgradeable {
     /**
      * @dev internal logic for computing the pending payment of an `account` given the token historical balances and
      * already released amounts.
+     * 获取当前可以分的ETH
      */
     function _pendingPayment(
         address account,
@@ -194,6 +212,7 @@ contract PaymentSplitterUpgradeable is Initializable, ContextUpgradeable {
 
     /**
      * @dev Add a new payee to the contract.
+     * 添加新的收款者
      * @param account The address of the payee to add.
      * @param shares_ The number of shares owned by the payee.
      */

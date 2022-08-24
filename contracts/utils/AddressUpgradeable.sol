@@ -45,13 +45,16 @@ library AddressUpgradeable {
     /**
      * @dev Replacement for Solidity's `transfer`: sends `amount` wei to
      * `recipient`, forwarding all available gas and reverting on errors.
-     *  Solidity转移方法的替代方式：发送给定数量的wei
+     *  Solidity转移方法transfer和的sends替代方式：转账所有可利用的wei，在遇到错误时revert ；
      * https://eips.ethereum.org/EIPS/eip-1884[EIP1884] increases the gas cost
      * of certain opcodes, possibly making contracts go over the 2300 gas limit
      * imposed by `transfer`, making them unable to receive funds via
      * `transfer`. {sendValue} removes this limitation.
+     *  EIP1884协议增加确定操作的gas，使send和transfer的操作gas可能大于2300。建议使用
+     *  (bool success, ) = recipient.call{value: amount}("");
      * [停止使用Solidity的transfer()](https://www.zhihu.com/search?type=content&q=eip-1884)
      * https://diligence.consensys.net/posts/2019/09/stop-using-soliditys-transfer-now/[Learn more].
+     * 细究以太坊中send/transfer/call/delegatecall：https://zhuanlan.zhihu.com/p/35292014
      *
      * IMPORTANT: because control is transferred to `recipient`, care must be
      * taken to not create reentrancy vulnerabilities. Consider using
@@ -60,7 +63,7 @@ library AddressUpgradeable {
      */
     function sendValue(address payable recipient, uint256 amount) internal {
         require(address(this).balance >= amount, "Address: insufficient balance");
-
+        //call低级别的转账，
         (bool success, ) = recipient.call{value: amount}("");
         require(success, "Address: unable to send value, recipient may have reverted");
     }
