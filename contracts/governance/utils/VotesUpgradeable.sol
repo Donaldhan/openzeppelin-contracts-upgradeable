@@ -15,18 +15,19 @@ import "../../proxy/utils/Initializable.sol";
  * "representative" that will pool delegated voting units from different accounts and can then use it to vote in
  * decisions. In fact, voting units _must_ be delegated in order to count as actual votes, and an account has to
  * delegate those votes to itself if it wishes to participate in decisions and does not have a trusted representative.
- *
+ * 此合约为追踪投票的最小单元，投票的权重可以转移，并提供投票代理系统
  * This contract is often combined with a token contract such that voting units correspond to token units. For an
  * example, see {ERC721Votes}.
- *
+ * 此合约经常合约投票的token合约关联起来
  * The full history of delegate votes is tracked on-chain so that governance protocols can consider votes as distributed
  * at a particular block number to protect against flash loans and double voting. The opt-in delegate system makes the
  * cost of this history tracking optional.
- *
+ * 全链路的历史可追踪代理投票，以便governance协议在某个特定区块的分布式投票，可以将投票作为抵抗闪电贷和双花一种手段；
+
  * When using this module the derived contract must implement {_getVotingUnits} (for example, make it return
  * {ERC721-balanceOf}), and can use {_transferVotingUnits} to track a change in the distribution of those units (in the
  * previous example, it would be included in {ERC721-_beforeTokenTransfer}).
- *
+ * 当使用这个模块，必须实现_getVotingUnits，比如返回721的余额，可以用_transferVotingUnits追踪分布式投票单元的变化
  * _Available since v4.5._
  */
 abstract contract VotesUpgradeable is Initializable, IVotesUpgradeable, ContextUpgradeable, EIP712Upgradeable {
@@ -43,12 +44,12 @@ abstract contract VotesUpgradeable is Initializable, IVotesUpgradeable, ContextU
 
     mapping(address => address) private _delegation;//账户代理
     mapping(address => CheckpointsUpgradeable.History) private _delegateCheckpoints; //代理检查点
-    CheckpointsUpgradeable.History private _totalCheckpoints; //所有检查点
+    CheckpointsUpgradeable.History private _totalCheckpoints; //所有检查点总投票份额
     //用户nonce
     mapping(address => CountersUpgradeable.Counter) private _nonces;
 
     /**
-     * @dev Returns the current amount of votes that `account` has. 当年账户的投票数
+     * @dev Returns the current amount of votes that `account` has. 当前账户的投票数
      */
     function getVotes(address account) public view virtual override returns (uint256) {
         return _delegateCheckpoints[account].latest();
@@ -156,11 +157,13 @@ abstract contract VotesUpgradeable is Initializable, IVotesUpgradeable, ContextU
         if (to == address(0)) {
             _totalCheckpoints.push(_subtract, amount);
         }
+        // 转移投票权
         _moveDelegateVotes(delegates(from), delegates(to), amount);
     }
 
     /**
      * @dev Moves delegated votes from one delegate to another.
+     * 将投票权从一个代理，授权给另外一个代理
      */
     function _moveDelegateVotes(
         address from,
@@ -217,6 +220,7 @@ abstract contract VotesUpgradeable is Initializable, IVotesUpgradeable, ContextU
 
     /**
      * @dev Must return the voting units held by an account.
+     * 返回账户当前的投票单元
      */
     function _getVotingUnits(address) internal view virtual returns (uint256);
 

@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 /**
  * @dev Common interface for {ERC20Votes}, {ERC721Votes}, and other {Votes}-enabled contracts.
- *
+ * 通用的20投票、721投票，和其他投票
  * _Available since v4.5._
  */
 interface IVotesUpgradeable {

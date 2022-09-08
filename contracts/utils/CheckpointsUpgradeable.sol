@@ -19,8 +19,8 @@ library CheckpointsUpgradeable {
      * 检查点
      */
     struct Checkpoint {
-        uint32 _blockNumber;
-        uint224 _value;
+        uint32 _blockNumber;//块高
+        uint224 _value;//投票权重数
     }
     /**
      * 历史检查点
