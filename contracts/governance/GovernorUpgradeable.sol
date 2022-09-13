@@ -18,11 +18,13 @@ import "../proxy/utils/Initializable.sol";
 
 /**
  * @dev Core of the governance system, designed to be extended though various modules.
- *
+ * 州系统核心，通过不同的模块拓展
  * This contract is abstract and requires several function to be implemented in various modules:
- *
+ * 以下需要实现计数模块
  * - A counting module must implement {quorum}, {_quorumReached}, {_voteSucceeded} and {_countVote}
+ * 投票模块
  * - A voting module must implement {_getVotes}
+ * 投票间隔
  * - Additionanly, the {votingPeriod} must also be implemented
  *
  * _Available since v4.3._
@@ -31,43 +33,51 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
     using DoubleEndedQueueUpgradeable for DoubleEndedQueueUpgradeable.Bytes32Deque;
     using SafeCastUpgradeable for uint256;
     using TimersUpgradeable for TimersUpgradeable.BlockNumber;
-
+    //投票消息
     bytes32 public constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
+    //扩展投票消息
     bytes32 public constant EXTENDED_BALLOT_TYPEHASH =
         keccak256("ExtendedBallot(uint256 proposalId,uint8 support,string reason,bytes params)");
 
     struct ProposalCore {
-        TimersUpgradeable.BlockNumber voteStart;
-        TimersUpgradeable.BlockNumber voteEnd;
-        bool executed;
-        bool canceled;
+        TimersUpgradeable.BlockNumber voteStart;//投票开始块高
+        TimersUpgradeable.BlockNumber voteEnd;//投票结束块高
+        bool executed;//是否执行
+        bool canceled;//是否取消
     }
 
-    string private _name;
-
+    string private _name;//名称
+    //提案
     mapping(uint256 => ProposalCore) private _proposals;
 
     // This queue keeps track of the governor operating on itself. Calls to functions protected by the
     // {onlyGovernance} modifier needs to be whitelisted in this queue. Whitelisting is set in {_beforeExecute},
     // consumed by the {onlyGovernance} modifier and eventually reset in {_afterExecute}. This ensures that the
     // execution of {onlyGovernance} protected calls can only be achieved through successful proposals.
+    // 这的队列保持者governor操作的追踪。在这个队列中，调用方法，需要 modifier onlyGovernance方法的保护。
+    // 白名单在 {_beforeExecute},消费，在{_afterExecute}方法，最终重置。确保最终的成功提案在{onlyGovernance}保护下执行调用；
+    // 
     DoubleEndedQueueUpgradeable.Bytes32Deque private _governanceCall;
 
     /**
      * @dev Restricts a function so it can only be executed through governance proposals. For example, governance
      * parameter setters in {GovernorSettings} are protected using this modifier.
-     *
+     * 限制一个功能，只能通过governance提案执行；
      * The governance executing address may be different from the Governor's own address, for example it could be a
      * timelock. This can be customized by modules by overriding {_executor}. The executor is only able to invoke these
      * functions during the execution of the governor's {execute} function, and not under any other circumstances. Thus,
      * for example, additional timelock proposers are not able to change governance parameters without going through the
      * governance protocol (since v4.6).
+     * governance执行地址，可能不是Governor自己的地址，比如可能为一个timelock。可以通过重写 {_executor}，来定制；
+     * 执行器只能在 {execute}的执行过程中，执行功能，不能在任何其他的环境。因此其他的timelock提议者，在没有通过governance的协议的情况下，不能改变
+     * governance参数
      */
     modifier onlyGovernance() {
         require(_msgSender() == _executor(), "Governor: onlyGovernance");
         if (_executor() != address(this)) {
             bytes32 msgDataHash = keccak256(_msgData());
             // loop until popping the expected operation - throw if deque is empty (operation not authorized)
+            //循环，直到弹出期望的操作
             while (_governanceCall.popFront() != msgDataHash) {}
         }
         _;
@@ -77,6 +87,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
      * @dev Sets the value for {name} and {version}
      */
     function __Governor_init(string memory name_) internal onlyInitializing {
+        //712 init
         __EIP712_init_unchained(name_, version());
         __Governor_init_unchained(name_);
     }
@@ -87,13 +98,14 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
 
     /**
      * @dev Function to receive ETH that will be handled by the governor (disabled if executor is a third party contract)
+     * 接收以太坊的方法，执行者，必须为当前合约
      */
     receive() external payable virtual {
         require(_executor() == address(this));
     }
 
     /**
-     * @dev See {IERC165-supportsInterface}.
+     * @dev See {IERC165-supportsInterface}. 165支持
      */
     function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165Upgradeable, ERC165Upgradeable) returns (bool) {
         // In addition to the current interfaceId, also support previous version of the interfaceId that did not
@@ -125,7 +137,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
 
     /**
      * @dev See {IGovernor-hashProposal}.
-     *
+     * 提案hash，不支持跨链提案，用户可以通过description来改变
      * The proposal id is produced by hashing the RLC encoded `targets` array, the `values` array, the `calldatas` array
      * and the descriptionHash (bytes32 which itself is the keccak256 hash of the description string). This proposal id
      * can be produced from the proposal data which is part of the {ProposalCreated} event. It can even be computed in
@@ -146,6 +158,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
     }
 
     /**
+    * 获取提案状态
      * @dev See {IGovernor-state}.
      */
     function state(uint256 proposalId) public view virtual override returns (ProposalState) {
@@ -165,25 +178,28 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
             revert("Governor: unknown proposal id");
         }
 
-        if (snapshot >= block.number) {
+        if (snapshot >= block.number) {//pending
             return ProposalState.Pending;
         }
 
         uint256 deadline = proposalDeadline(proposalId);
 
-        if (deadline >= block.number) {
+        if (deadline >= block.number) {//提案投票中
             return ProposalState.Active;
         }
 
         if (_quorumReached(proposalId) && _voteSucceeded(proposalId)) {
+            //达到法定人数或者投票成功
             return ProposalState.Succeeded;
         } else {
+            //失败
             return ProposalState.Defeated;
         }
     }
 
     /**
      * @dev See {IGovernor-proposalSnapshot}.
+     * 提案开始投票时间快照
      */
     function proposalSnapshot(uint256 proposalId) public view virtual override returns (uint256) {
         return _proposals[proposalId].voteStart.getDeadline();
@@ -191,6 +207,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
 
     /**
      * @dev See {IGovernor-proposalDeadline}.
+     * 提案截止时间
      */
     function proposalDeadline(uint256 proposalId) public view virtual override returns (uint256) {
         return _proposals[proposalId].voteEnd.getDeadline();
@@ -198,6 +215,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
 
     /**
      * @dev Part of the Governor Bravo's interface: _"The number of votes required in order for a voter to become a proposer"_.
+     * 投票者，变成提案需要的投票数
      */
     function proposalThreshold() public view virtual returns (uint256) {
         return 0;
@@ -205,16 +223,19 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
 
     /**
      * @dev Amount of votes already cast passes the threshold limit.
+     * 法定人数是否达到
      */
     function _quorumReached(uint256 proposalId) internal view virtual returns (bool);
 
     /**
      * @dev Is the proposal successful or not.
+     * 是否投票成功
      */
     function _voteSucceeded(uint256 proposalId) internal view virtual returns (bool);
 
     /**
      * @dev Get the voting weight of `account` at a specific `blockNumber`, for a vote as described by `params`.
+     * 或给给定账户，在给定区块的投票权重
      */
     function _getVotes(
         address account,
@@ -224,7 +245,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
 
     /**
      * @dev Register a vote for `proposalId` by `account` with a given `support`, voting `weight` and voting `params`.
-     *
+     * 注册用户给定提案的投票权重
      * Note: Support is generic and can represent various things depending on the voting system used.
      */
     function _countVote(
@@ -237,7 +258,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
 
     /**
      * @dev Default additional encoded parameters used by castVote methods that don't include them
-     *
+     * 投票的默认参数
      * Note: Should be overridden by specific implementations to use an appropriate value, the
      * meaning of the additional params, in the context of that implementation
      */
@@ -247,6 +268,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
 
     /**
      * @dev See {IGovernor-propose}.
+     * 发起提案
      */
     function propose(
         address[] memory targets,
@@ -254,23 +276,26 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
         bytes[] memory calldatas,
         string memory description
     ) public virtual override returns (uint256) {
+        //提案者投票权重检查
         require(
             getVotes(_msgSender(), block.number - 1) >= proposalThreshold(),
             "Governor: proposer votes below proposal threshold"
         );
-
+        //获取提案hash
         uint256 proposalId = hashProposal(targets, values, calldatas, keccak256(bytes(description)));
-
+        //参数检查
         require(targets.length == values.length, "Governor: invalid proposal length");
         require(targets.length == calldatas.length, "Governor: invalid proposal length");
         require(targets.length > 0, "Governor: empty proposal");
-
+        
         ProposalCore storage proposal = _proposals[proposalId];
+        //确保提案不存在
         require(proposal.voteStart.isUnset(), "Governor: proposal already exists");
-
+        //提案开始时间快照 
         uint64 snapshot = block.number.toUint64() + votingDelay().toUint64();
+        //提案截止时间
         uint64 deadline = snapshot + votingPeriod().toUint64();
-
+        //设置提案开始结束时间
         proposal.voteStart.setDeadline(snapshot);
         proposal.voteEnd.setDeadline(deadline);
 
@@ -291,6 +316,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
 
     /**
      * @dev See {IGovernor-execute}.
+     * 执行提案
      */
     function execute(
         address[] memory targets,
@@ -301,15 +327,18 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
         uint256 proposalId = hashProposal(targets, values, calldatas, descriptionHash);
 
         ProposalState status = state(proposalId);
+        //提案成功才能执行
         require(
             status == ProposalState.Succeeded || status == ProposalState.Queued,
             "Governor: proposal not successful"
         );
+        //提案已经执行
         _proposals[proposalId].executed = true;
 
         emit ProposalExecuted(proposalId);
 
         _beforeExecute(proposalId, targets, values, calldatas, descriptionHash);
+        //执行提案
         _execute(proposalId, targets, values, calldatas, descriptionHash);
         _afterExecute(proposalId, targets, values, calldatas, descriptionHash);
 
@@ -318,6 +347,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
 
     /**
      * @dev Internal execution mechanism. Can be overridden to implement different execution mechanism
+     * 实际执行提案逻辑
      */
     function _execute(
         uint256, /* proposalId */
@@ -346,6 +376,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
         if (_executor() != address(this)) {
             for (uint256 i = 0; i < targets.length; ++i) {
                 if (targets[i] == address(this)) {
+                    //目标提案调用合约为本合约，添加到到调用队列
                     _governanceCall.pushBack(keccak256(calldatas[i]));
                 }
             }
@@ -364,6 +395,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
     ) internal virtual {
         if (_executor() != address(this)) {
             if (!_governanceCall.empty()) {
+                //执行完清除执行队列
                 _governanceCall.clear();
             }
         }
@@ -404,6 +436,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
 
     /**
      * @dev See {IGovernor-getVotesWithParams}.
+     * 获取投票权重
      */
     function getVotesWithParams(
         address account,
@@ -415,6 +448,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
 
     /**
      * @dev See {IGovernor-castVote}.
+     * 投票
      */
     function castVote(uint256 proposalId, uint8 support) public virtual override returns (uint256) {
         address voter = _msgSender();
@@ -423,6 +457,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
 
     /**
      * @dev See {IGovernor-castVoteWithReason}.
+     * 带原因的投票
      */
     function castVoteWithReason(
         uint256 proposalId,
@@ -435,6 +470,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
 
     /**
      * @dev See {IGovernor-castVoteWithReasonAndParams}.
+     * 带原因及参数的投票
      */
     function castVoteWithReasonAndParams(
         uint256 proposalId,
@@ -448,6 +484,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
 
     /**
      * @dev See {IGovernor-castVoteBySig}.
+     * 带签名的投票
      */
     function castVoteBySig(
         uint256 proposalId,
@@ -456,6 +493,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
         bytes32 r,
         bytes32 s
     ) public virtual override returns (uint256) {
+        //恢复投票者
         address voter = ECDSAUpgradeable.recover(
             _hashTypedDataV4(keccak256(abi.encode(BALLOT_TYPEHASH, proposalId, support))),
             v,
@@ -467,6 +505,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
 
     /**
      * @dev See {IGovernor-castVoteWithReasonAndParamsBySig}.
+     * 带签名的原因参数投票
      */
     function castVoteWithReasonAndParamsBySig(
         uint256 proposalId,
@@ -477,6 +516,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
         bytes32 r,
         bytes32 s
     ) public virtual override returns (uint256) {
+        //恢复投票者
         address voter = ECDSAUpgradeable.recover(
             _hashTypedDataV4(
                 keccak256(
@@ -500,7 +540,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
     /**
      * @dev Internal vote casting mechanism: Check that the vote is pending, that it has not been cast yet, retrieve
      * voting weight using {IGovernor-getVotes} and call the {_countVote} internal function. Uses the _defaultParams().
-     *
+     * 投票
      * Emits a {IGovernor-VoteCast} event.
      */
     function _castVote(
@@ -515,7 +555,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
     /**
      * @dev Internal vote casting mechanism: Check that the vote is pending, that it has not been cast yet, retrieve
      * voting weight using {IGovernor-getVotes} and call the {_countVote} internal function.
-     *
+     * 实际投票
      * Emits a {IGovernor-VoteCast} event.
      */
     function _castVote(
@@ -526,9 +566,11 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
         bytes memory params
     ) internal virtual returns (uint256) {
         ProposalCore storage proposal = _proposals[proposalId];
+        //检查提案状态
         require(state(proposalId) == ProposalState.Active, "Governor: vote not currently active");
-
+        //获取投票者的权重
         uint256 weight = _getVotes(account, proposal.voteStart.getDeadline(), params);
+        //注册投票
         _countVote(proposalId, account, support, weight, params);
 
         if (params.length == 0) {
@@ -545,6 +587,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
      * is some contract other than the governor itself, like when using a timelock, this function can be invoked
      * in a governance proposal to recover tokens or Ether that was sent to the governor contract by mistake.
      * Note that if the executor is simply the governor itself, use of `relay` is redundant.
+     * 中继交易，针对governance执行器非governor自己合约的情况
      */
     function relay(
         address target,
@@ -557,6 +600,8 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
     /**
      * @dev Address through which the governor executes action. Will be overloaded by module that execute actions
      * through another contract such as a timelock.
+     * 执行当前action的地址：governor；
+     * 将会通过模块重写
      */
     function _executor() internal view virtual returns (address) {
         return address(this);

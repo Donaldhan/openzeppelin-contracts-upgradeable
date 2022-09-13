@@ -9,23 +9,25 @@ import "../math/SafeCastUpgradeable.sol";
  * the sequence (called front and back). Among other access patterns, it can be used to implement efficient LIFO and
  * FIFO queues. Storage use is optimized, and all operations are O(1) constant time. This includes {clear}, given that
  * the existing queue contents are left in storage.
- *
+ * 可以在双端push和pop；双向队列；可以用于实现FIFO和LIFO队列。
  * The struct is called `Bytes32Deque`. Other types can be cast to and from `bytes32`. This data structure can only be
  * used in storage, and not in memory.
  * ```
  * DoubleEndedQueue.Bytes32Deque queue;
  * ```
- *
+ * 双向队列
  * _Available since v4.6._
  */
 library DoubleEndedQueueUpgradeable {
     /**
      * @dev An operation (e.g. {front}) couldn't be completed due to the queue being empty.
+     * 由于队列为空，front不能完成
      */
     error Empty();
 
     /**
      * @dev An operation (e.g. {at}) couldn't be completed due to an index being out of bounds.
+     * 越界
      */
     error OutOfBounds();
 
@@ -40,6 +42,7 @@ library DoubleEndedQueueUpgradeable {
      *
      * Indices are in the range [begin, end) which means the first item is at data[begin] and the last item is at
      * data[end - 1].
+
      */
     struct Bytes32Deque {
         int128 _begin;
@@ -49,6 +52,7 @@ library DoubleEndedQueueUpgradeable {
 
     /**
      * @dev Inserts an item at the end of the queue.
+     * 队尾插入元素
      */
     function pushBack(Bytes32Deque storage deque, bytes32 value) internal {
         int128 backIndex = deque._end;
@@ -60,7 +64,7 @@ library DoubleEndedQueueUpgradeable {
 
     /**
      * @dev Removes the item at the end of the queue and returns it.
-     *
+     * 队尾弹出元素
      * Reverts with `Empty` if the queue is empty.
      */
     function popBack(Bytes32Deque storage deque) internal returns (bytes32 value) {
@@ -76,6 +80,7 @@ library DoubleEndedQueueUpgradeable {
 
     /**
      * @dev Inserts an item at the beginning of the queue.
+     * 对手插入元素
      */
     function pushFront(Bytes32Deque storage deque, bytes32 value) internal {
         int128 frontIndex;
@@ -88,7 +93,7 @@ library DoubleEndedQueueUpgradeable {
 
     /**
      * @dev Removes the item at the beginning of the queue and returns it.
-     *
+     * 队首弹出元素
      * Reverts with `Empty` if the queue is empty.
      */
     function popFront(Bytes32Deque storage deque) internal returns (bytes32 value) {
@@ -103,7 +108,7 @@ library DoubleEndedQueueUpgradeable {
 
     /**
      * @dev Returns the item at the beginning of the queue.
-     *
+     * 对首元素
      * Reverts with `Empty` if the queue is empty.
      */
     function front(Bytes32Deque storage deque) internal view returns (bytes32 value) {
@@ -114,7 +119,7 @@ library DoubleEndedQueueUpgradeable {
 
     /**
      * @dev Returns the item at the end of the queue.
-     *
+     * 队尾元素
      * Reverts with `Empty` if the queue is empty.
      */
     function back(Bytes32Deque storage deque) internal view returns (bytes32 value) {
@@ -129,7 +134,7 @@ library DoubleEndedQueueUpgradeable {
     /**
      * @dev Return the item at a position in the queue given by `index`, with the first item at 0 and last item at
      * `length(deque) - 1`.
-     *
+     * 给定索引的元素
      * Reverts with `OutOfBounds` if the index is out of bounds.
      */
     function at(Bytes32Deque storage deque, uint256 index) internal view returns (bytes32 value) {
@@ -140,8 +145,8 @@ library DoubleEndedQueueUpgradeable {
     }
 
     /**
-     * @dev Resets the queue back to being empty.
-     *
+     * @dev Resets the queue back to being empty. 
+     * 清除双向队列
      * NOTE: The current items are left behind in storage. This does not affect the functioning of the queue, but misses
      * out on potential gas refunds.
      */
@@ -152,6 +157,7 @@ library DoubleEndedQueueUpgradeable {
 
     /**
      * @dev Returns the number of items in the queue.
+     * 队列长度
      */
     function length(Bytes32Deque storage deque) internal view returns (uint256) {
         // The interface preserves the invariant that begin <= end so we assume this will not overflow.
@@ -163,6 +169,7 @@ library DoubleEndedQueueUpgradeable {
 
     /**
      * @dev Returns true if the queue is empty.
+     * 是否为空队列
      */
     function empty(Bytes32Deque storage deque) internal view returns (bool) {
         return deque._end <= deque._begin;
