@@ -8,7 +8,7 @@ import "../../proxy/utils/Initializable.sol";
 
 /**
  * @dev Extension of {Governor} for settings updatable through governance.
- *
+ * 提案延迟时间，持续时间，以及提案门限设置拓展
  * _Available since v4.4._
  */
 abstract contract GovernorSettingsUpgradeable is Initializable, GovernorUpgradeable {
@@ -91,7 +91,7 @@ abstract contract GovernorSettingsUpgradeable is Initializable, GovernorUpgradea
 
     /**
      * @dev Internal setter for the voting delay.
-     *
+     * 设置提案延迟时间
      * Emits a {VotingDelaySet} event.
      */
     function _setVotingDelay(uint256 newVotingDelay) internal virtual {
@@ -101,7 +101,7 @@ abstract contract GovernorSettingsUpgradeable is Initializable, GovernorUpgradea
 
     /**
      * @dev Internal setter for the voting period.
-     *
+     * 设置投票间隔
      * Emits a {VotingPeriodSet} event.
      */
     function _setVotingPeriod(uint256 newVotingPeriod) internal virtual {
@@ -113,7 +113,7 @@ abstract contract GovernorSettingsUpgradeable is Initializable, GovernorUpgradea
 
     /**
      * @dev Internal setter for the proposal threshold.
-     *
+     * 设置提案门槛
      * Emits a {ProposalThresholdSet} event.
      */
     function _setProposalThreshold(uint256 newProposalThreshold) internal virtual {

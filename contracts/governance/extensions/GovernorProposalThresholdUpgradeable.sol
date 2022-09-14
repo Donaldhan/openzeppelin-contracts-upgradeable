@@ -8,7 +8,7 @@ import "../../proxy/utils/Initializable.sol";
 
 /**
  * @dev Extension of {Governor} for proposal restriction to token holders with a minimum balance.
- *
+ *  Governor拓展，需要限制token持有者的最小余额
  * _Available since v4.3._
  * _Deprecated since v4.4._
  */

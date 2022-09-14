@@ -9,7 +9,7 @@ import "../../proxy/utils/Initializable.sol";
 /**
  * @dev Extension of {Governor} for voting weight extraction from an {ERC20Votes} token and a quorum expressed as a
  * fraction of the total supply.
- *
+ * Governor 模式，法定token百分比设置，以分子控制，分母默认为100
  * _Available since v4.3._
  */
 abstract contract GovernorVotesQuorumFractionUpgradeable is Initializable, GovernorVotesUpgradeable {
@@ -34,6 +34,7 @@ abstract contract GovernorVotesQuorumFractionUpgradeable is Initializable, Gover
 
     /**
      * @dev Returns the current quorum numerator. See {quorumDenominator}.
+     * 法定人数投票百分比，分子
      */
     function quorumNumerator() public view virtual returns (uint256) {
         return _quorumNumerator;
@@ -41,6 +42,7 @@ abstract contract GovernorVotesQuorumFractionUpgradeable is Initializable, Gover
 
     /**
      * @dev Returns the quorum denominator. Defaults to 100, but may be overridden.
+     * 法定投票百分比，分母，默认100
      */
     function quorumDenominator() public view virtual returns (uint256) {
         return 100;
@@ -57,7 +59,7 @@ abstract contract GovernorVotesQuorumFractionUpgradeable is Initializable, Gover
      * @dev Changes the quorum numerator.
      *
      * Emits a {QuorumNumeratorUpdated} event.
-     *
+     * 更新分子
      * Requirements:
      *
      * - Must be called through a governance proposal.
@@ -77,6 +79,7 @@ abstract contract GovernorVotesQuorumFractionUpgradeable is Initializable, Gover
      * - New numerator must be smaller or equal to the denominator.
      */
     function _updateQuorumNumerator(uint256 newQuorumNumerator) internal virtual {
+        //分子需要小于分母
         require(
             newQuorumNumerator <= quorumDenominator(),
             "GovernorVotesQuorumFraction: quorumNumerator over quorumDenominator"

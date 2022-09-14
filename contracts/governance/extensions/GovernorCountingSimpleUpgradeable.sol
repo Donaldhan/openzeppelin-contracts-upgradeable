@@ -8,7 +8,7 @@ import "../../proxy/utils/Initializable.sol";
 
 /**
  * @dev Extension of {Governor} for simple, 3 options, vote counting.
- *
+ * 简单投票模式
  * _Available since v4.3._
  */
 abstract contract GovernorCountingSimpleUpgradeable is Initializable, GovernorUpgradeable {
@@ -25,18 +25,19 @@ abstract contract GovernorCountingSimpleUpgradeable is Initializable, GovernorUp
         For,
         Abstain
     }
-
+    //提案投票
     struct ProposalVote {
-        uint256 againstVotes;
-        uint256 forVotes;
-        uint256 abstainVotes;
-        mapping(address => bool) hasVoted;
+        uint256 againstVotes;//反对
+        uint256 forVotes; //赞成
+        uint256 abstainVotes;///弃权
+        mapping(address => bool) hasVoted;//是否投票
     }
 
     mapping(uint256 => ProposalVote) private _proposalVotes;
 
     /**
      * @dev See {IGovernor-COUNTING_MODE}.
+     * 投票模式
      */
     // solhint-disable-next-line func-name-mixedcase
     function COUNTING_MODE() public pure virtual override returns (string memory) {
@@ -45,6 +46,7 @@ abstract contract GovernorCountingSimpleUpgradeable is Initializable, GovernorUp
 
     /**
      * @dev See {IGovernor-hasVoted}.
+     * 是否投票
      */
     function hasVoted(uint256 proposalId, address account) public view virtual override returns (bool) {
         return _proposalVotes[proposalId].hasVoted[account];
@@ -52,6 +54,7 @@ abstract contract GovernorCountingSimpleUpgradeable is Initializable, GovernorUp
 
     /**
      * @dev Accessor to the internal vote counts.
+     * 提案投票结果
      */
     function proposalVotes(uint256 proposalId)
         public
@@ -69,6 +72,7 @@ abstract contract GovernorCountingSimpleUpgradeable is Initializable, GovernorUp
 
     /**
      * @dev See {Governor-_quorumReached}.
+     * 法定人数是否达到
      */
     function _quorumReached(uint256 proposalId) internal view virtual override returns (bool) {
         ProposalVote storage proposalvote = _proposalVotes[proposalId];
@@ -78,6 +82,7 @@ abstract contract GovernorCountingSimpleUpgradeable is Initializable, GovernorUp
 
     /**
      * @dev See {Governor-_voteSucceeded}. In this module, the forVotes must be strictly over the againstVotes.
+     * 投票是否成功
      */
     function _voteSucceeded(uint256 proposalId) internal view virtual override returns (bool) {
         ProposalVote storage proposalvote = _proposalVotes[proposalId];
@@ -87,6 +92,7 @@ abstract contract GovernorCountingSimpleUpgradeable is Initializable, GovernorUp
 
     /**
      * @dev See {Governor-_countVote}. In this module, the support follows the `VoteType` enum (from Governor Bravo).
+     * 投票
      */
     function _countVote(
         uint256 proposalId,
@@ -96,7 +102,7 @@ abstract contract GovernorCountingSimpleUpgradeable is Initializable, GovernorUp
         bytes memory // params
     ) internal virtual override {
         ProposalVote storage proposalvote = _proposalVotes[proposalId];
-
+        //确保没有投票
         require(!proposalvote.hasVoted[account], "GovernorVotingSimple: vote already cast");
         proposalvote.hasVoted[account] = true;
 

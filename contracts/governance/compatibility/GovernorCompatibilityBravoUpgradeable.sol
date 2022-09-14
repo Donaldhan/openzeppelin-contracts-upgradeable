@@ -12,12 +12,13 @@ import "../../proxy/utils/Initializable.sol";
 
 /**
  * @dev Compatibility layer that implements GovernorBravo compatibility on to of {Governor}.
- *
+ * GovernorBravo 兼容Governor 模式
  * This compatibility layer includes a voting system and requires a {IGovernorTimelock} compatible module to be added
  * through inheritance. It does not include token bindings, not does it include any variable upgrade patterns.
+ * 
  *
  * NOTE: When using this module, you may need to enable the Solidity optimizer to avoid hitting the contract size limit.
- *
+ * 使用此合约需要，开启solidity优化器，避免到达何合约大小限制
  * _Available since v4.3._
  */
 abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGovernorTimelockUpgradeable, IGovernorCompatibilityBravoUpgradeable, GovernorUpgradeable {
@@ -30,11 +31,11 @@ abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGover
     using TimersUpgradeable for TimersUpgradeable.BlockNumber;
 
     enum VoteType {
-        Against,
-        For,
-        Abstain
+        Against,//反对
+        For,//赞成
+        Abstain//弃权
     }
-
+    //提案详情
     struct ProposalDetails {
         address proposer;
         address[] targets;
@@ -48,9 +49,10 @@ abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGover
         bytes32 descriptionHash;
     }
 
-    mapping(uint256 => ProposalDetails) private _proposalDetails;
+    mapping(uint256 => ProposalDetails) private _proposalDetails; //提案详情
 
     // solhint-disable-next-line func-name-mixedcase
+    //提案模式
     function COUNTING_MODE() public pure virtual override returns (string memory) {
         return "support=bravo&quorum=bravo";
     }
@@ -58,6 +60,7 @@ abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGover
     // ============================================== Proposal lifecycle ==============================================
     /**
      * @dev See {IGovernor-propose}.
+     * 发起提案
      */
     function propose(
         address[] memory targets,
@@ -71,6 +74,7 @@ abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGover
 
     /**
      * @dev See {IGovernorCompatibilityBravo-propose}.
+     * 带签名的提案
      */
     function propose(
         address[] memory targets,
@@ -85,6 +89,7 @@ abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGover
 
     /**
      * @dev See {IGovernorCompatibilityBravo-queue}.
+     * 成功，入提案队列
      */
     function queue(uint256 proposalId) public virtual override {
         ProposalDetails storage details = _proposalDetails[proposalId];
@@ -98,6 +103,7 @@ abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGover
 
     /**
      * @dev See {IGovernorCompatibilityBravo-execute}.
+     * 执行提案
      */
     function execute(uint256 proposalId) public payable virtual override {
         ProposalDetails storage details = _proposalDetails[proposalId];
@@ -108,10 +114,12 @@ abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGover
             details.descriptionHash
         );
     }
-
+    /**
+     * 取消提案 
+     */
     function cancel(uint256 proposalId) public virtual override {
         ProposalDetails storage details = _proposalDetails[proposalId];
-
+        //确保提案中的投票份额达到门槛
         require(
             _msgSender() == details.proposer || getVotes(details.proposer, block.number - 1) < proposalThreshold(),
             "GovernorBravo: proposer above threshold"
@@ -127,6 +135,7 @@ abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGover
 
     /**
      * @dev Encodes calldatas with optional function signature.
+     * 编码方法及调用参数
      */
     function _encodeCalldata(string[] memory signatures, bytes[] memory calldatas)
         private
@@ -155,9 +164,10 @@ abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGover
         bytes[] memory calldatas,
         string memory description
     ) private {
+        //确保相同的提案不存在
         bytes32 descriptionHash = keccak256(bytes(description));
         uint256 proposalId = hashProposal(targets, values, _encodeCalldata(signatures, calldatas), descriptionHash);
-
+        //保存提案
         ProposalDetails storage details = _proposalDetails[proposalId];
         if (details.descriptionHash == bytes32(0)) {
             details.proposer = proposer;
@@ -172,6 +182,7 @@ abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGover
     // ==================================================== Views =====================================================
     /**
      * @dev See {IGovernorCompatibilityBravo-proposals}.
+     * 返回提案信息
      */
     function proposals(uint256 proposalId)
         public
@@ -209,6 +220,7 @@ abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGover
 
     /**
      * @dev See {IGovernorCompatibilityBravo-getActions}.
+     * 获取提案内容action
      */
     function getActions(uint256 proposalId)
         public
@@ -228,6 +240,7 @@ abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGover
 
     /**
      * @dev See {IGovernorCompatibilityBravo-getReceipt}.
+     * 获取投票回执
      */
     function getReceipt(uint256 proposalId, address voter) public view virtual override returns (Receipt memory) {
         return _proposalDetails[proposalId].receipts[voter];
@@ -243,6 +256,7 @@ abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGover
     // ==================================================== Voting ====================================================
     /**
      * @dev See {IGovernor-hasVoted}.
+     * 是否投票
      */
     function hasVoted(uint256 proposalId, address account) public view virtual override returns (bool) {
         return _proposalDetails[proposalId].receipts[account].hasVoted;
@@ -250,6 +264,7 @@ abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGover
 
     /**
      * @dev See {Governor-_quorumReached}. In this module, only forVotes count toward the quorum.
+     * 确然提案法定人数是否达到
      */
     function _quorumReached(uint256 proposalId) internal view virtual override returns (bool) {
         ProposalDetails storage details = _proposalDetails[proposalId];
@@ -258,6 +273,7 @@ abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGover
 
     /**
      * @dev See {Governor-_voteSucceeded}. In this module, the forVotes must be scritly over the againstVotes.
+     * 是否投票成功
      */
     function _voteSucceeded(uint256 proposalId) internal view virtual override returns (bool) {
         ProposalDetails storage details = _proposalDetails[proposalId];
@@ -266,6 +282,7 @@ abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGover
 
     /**
      * @dev See {Governor-_countVote}. In this module, the support follows Governor Bravo.
+     * 投票
      */
     function _countVote(
         uint256 proposalId,
@@ -276,12 +293,13 @@ abstract contract GovernorCompatibilityBravoUpgradeable is Initializable, IGover
     ) internal virtual override {
         ProposalDetails storage details = _proposalDetails[proposalId];
         Receipt storage receipt = details.receipts[account];
-
+        //确保没有投票
         require(!receipt.hasVoted, "GovernorCompatibilityBravo: vote already cast");
+        //投票
         receipt.hasVoted = true;
         receipt.support = support;
         receipt.votes = SafeCastUpgradeable.toUint96(weight);
-
+        //计算票额    
         if (support == uint8(VoteType.Against)) {
             details.againstVotes += weight;
         } else if (support == uint8(VoteType.For)) {

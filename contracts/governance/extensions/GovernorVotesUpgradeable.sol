@@ -9,7 +9,7 @@ import "../../proxy/utils/Initializable.sol";
 
 /**
  * @dev Extension of {Governor} for voting weight extraction from an {ERC20Votes} token, or since v4.5 an {ERC721Votes} token.
- *
+ *  ERC20Votes，ERC721Votes token Governor投票权重拓展合约，
  * _Available since v4.3._
  *
  * @custom:storage-size 51
@@ -27,6 +27,7 @@ abstract contract GovernorVotesUpgradeable is Initializable, GovernorUpgradeable
 
     /**
      * Read the voting weight from the token's built in snapshot mechanism (see {Governor-_getVotes}).
+     * 获取账户给定区块的投票权重快照
      */
     function _getVotes(
         address account,

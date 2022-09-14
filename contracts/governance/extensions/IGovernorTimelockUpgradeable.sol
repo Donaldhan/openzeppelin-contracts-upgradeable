@@ -22,7 +22,9 @@ abstract contract IGovernorTimelockUpgradeable is Initializable, IGovernorUpgrad
     function timelock() public view virtual returns (address);
 
     function proposalEta(uint256 proposalId) public view virtual returns (uint256);
-
+    /**
+     * 入队列
+     */
     function queue(
         address[] memory targets,
         uint256[] memory values,

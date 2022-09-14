@@ -404,7 +404,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
     /**
      * @dev Internal cancel mechanism: locks up the proposal timer, preventing it from being re-submitted. Marks it as
      * canceled to allow distinguishing it from executed proposals.
-     *
+     * 取消提案
      * Emits a {IGovernor-ProposalCanceled} event.
      */
     function _cancel(
@@ -415,7 +415,7 @@ abstract contract GovernorUpgradeable is Initializable, ContextUpgradeable, ERC1
     ) internal virtual returns (uint256) {
         uint256 proposalId = hashProposal(targets, values, calldatas, descriptionHash);
         ProposalState status = state(proposalId);
-
+        //确保提案处于激活状态
         require(
             status != ProposalState.Canceled && status != ProposalState.Expired && status != ProposalState.Executed,
             "Governor: proposal not active"
