@@ -11,6 +11,7 @@ contract MerkleProofWrapperUpgradeable is Initializable {
 
     function __MerkleProofWrapper_init_unchained() internal onlyInitializing {
     }
+    //验证
     function verify(
         bytes32[] memory proof,
         bytes32 root,
@@ -18,7 +19,7 @@ contract MerkleProofWrapperUpgradeable is Initializable {
     ) public pure returns (bool) {
         return MerkleProofUpgradeable.verify(proof, root, leaf);
     }
-
+    //调用数据验证
     function verifyCalldata(
         bytes32[] calldata proof,
         bytes32 root,
@@ -26,15 +27,15 @@ contract MerkleProofWrapperUpgradeable is Initializable {
     ) public pure returns (bool) {
         return MerkleProofUpgradeable.verifyCalldata(proof, root, leaf);
     }
-
+    //根据证据和叶节点计算默克尔树
     function processProof(bytes32[] memory proof, bytes32 leaf) public pure returns (bytes32) {
         return MerkleProofUpgradeable.processProof(proof, leaf);
     }
-
+   //根据证据和叶节点计算默克尔树
     function processProofCalldata(bytes32[] calldata proof, bytes32 leaf) public pure returns (bytes32) {
         return MerkleProofUpgradeable.processProofCalldata(proof, leaf);
     }
-
+    //验证默克树
     function multiProofVerify(
         bytes32[] calldata proofs,
         bool[] calldata proofFlag,
@@ -43,7 +44,7 @@ contract MerkleProofWrapperUpgradeable is Initializable {
     ) public pure returns (bool) {
         return MerkleProofUpgradeable.multiProofVerify(proofs, proofFlag, root, leaves);
     }
-
+    ///根据证据和叶节点计算默克尔树
     function processMultiProof(
         bytes32[] calldata proofs,
         bool[] calldata proofFlag,
