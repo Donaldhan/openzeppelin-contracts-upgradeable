@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: MIT
+/**
+ * 像Uniswap一样使用 Merkle 执行空投:https://learnblockchain.cn/article/4613
+ */
 
 pragma solidity ^0.8.0;
 
