@@ -10,6 +10,7 @@ interface ICompoundTimelockUpgradeable {
     event NewAdmin(address indexed newAdmin);
     event NewPendingAdmin(address indexed newPendingAdmin);
     event NewDelay(uint256 indexed newDelay);
+    //取消，执行，缓存交易
     event CancelTransaction(
         bytes32 indexed txHash,
         address indexed target,
@@ -57,9 +58,9 @@ interface ICompoundTimelockUpgradeable {
     function setDelay(uint256) external;
 
     function acceptAdmin() external;
-
+    //
     function setPendingAdmin(address) external;
-
+    //缓存交易
     function queueTransaction(
         address target,
         uint256 value,
@@ -67,7 +68,7 @@ interface ICompoundTimelockUpgradeable {
         bytes memory data,
         uint256 eta
     ) external returns (bytes32);
-
+    //取消交易
     function cancelTransaction(
         address target,
         uint256 value,
@@ -75,7 +76,7 @@ interface ICompoundTimelockUpgradeable {
         bytes memory data,
         uint256 eta
     ) external;
-
+    //执行交易
     function executeTransaction(
         address target,
         uint256 value,

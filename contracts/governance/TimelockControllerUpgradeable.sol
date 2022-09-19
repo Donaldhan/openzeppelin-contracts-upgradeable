@@ -15,7 +15,7 @@ import "../proxy/utils/Initializable.sol";
  * `onlyOwner` maintenance operations. This gives time for users of the
  * controlled contract to exit before a potentially dangerous maintenance
  * operation is applied.
- *
+ * 基于时钟的操作调度控制器
  * By default, this contract is self administered, meaning administration tasks
  * have to go through the timelock process. The proposer (resp executor) role
  * is in charge of proposing (resp executing) operations. A common use case is
@@ -25,17 +25,18 @@ import "../proxy/utils/Initializable.sol";
  * _Available since v3.3._
  */
 contract TimelockControllerUpgradeable is Initializable, AccessControlUpgradeable, IERC721ReceiverUpgradeable, IERC1155ReceiverUpgradeable {
-    bytes32 public constant TIMELOCK_ADMIN_ROLE = keccak256("TIMELOCK_ADMIN_ROLE");
-    bytes32 public constant PROPOSER_ROLE = keccak256("PROPOSER_ROLE");
-    bytes32 public constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");
-    bytes32 public constant CANCELLER_ROLE = keccak256("CANCELLER_ROLE");
-    uint256 internal constant _DONE_TIMESTAMP = uint256(1);
+    bytes32 public constant TIMELOCK_ADMIN_ROLE = keccak256("TIMELOCK_ADMIN_ROLE");//管理员角色
+    bytes32 public constant PROPOSER_ROLE = keccak256("PROPOSER_ROLE");//提案角色
+    bytes32 public constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");//执行角色
+    bytes32 public constant CANCELLER_ROLE = keccak256("CANCELLER_ROLE");//取消角色
+    uint256 internal constant _DONE_TIMESTAMP = uint256(1);//操作结束
 
-    mapping(bytes32 => uint256) private _timestamps;
-    uint256 private _minDelay;
+    mapping(bytes32 => uint256) private _timestamps;//操作时间
+    uint256 private _minDelay;//最小延迟
 
     /**
      * @dev Emitted when a call is scheduled as part of operation `id`.
+     * 调度id操作时产生
      */
     event CallScheduled(
         bytes32 indexed id,
@@ -49,16 +50,20 @@ contract TimelockControllerUpgradeable is Initializable, AccessControlUpgradeabl
 
     /**
      * @dev Emitted when a call is performed as part of operation `id`.
+     * 执行事件
+     * 
      */
     event CallExecuted(bytes32 indexed id, uint256 indexed index, address target, uint256 value, bytes data);
 
     /**
      * @dev Emitted when operation `id` is cancelled.
+     * 取消事件
      */
     event Cancelled(bytes32 indexed id);
 
     /**
      * @dev Emitted when the minimum delay for future operations is modified.
+     * 最小延迟事件
      */
     event MinDelayChange(uint256 oldDuration, uint256 newDuration);
 
@@ -87,27 +92,28 @@ contract TimelockControllerUpgradeable is Initializable, AccessControlUpgradeabl
         address[] memory proposers,
         address[] memory executors
     ) internal onlyInitializing {
+        //设置各角色的管理员角色
         _setRoleAdmin(TIMELOCK_ADMIN_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(PROPOSER_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(EXECUTOR_ROLE, TIMELOCK_ADMIN_ROLE);
         _setRoleAdmin(CANCELLER_ROLE, TIMELOCK_ADMIN_ROLE);
 
-        // deployer + self administration
+        // deployer + self administration，管理员角色
         _setupRole(TIMELOCK_ADMIN_ROLE, _msgSender());
         _setupRole(TIMELOCK_ADMIN_ROLE, address(this));
 
-        // register proposers and cancellers
+        // register proposers and cancellers，设置和取消角色
         for (uint256 i = 0; i < proposers.length; ++i) {
             _setupRole(PROPOSER_ROLE, proposers[i]);
             _setupRole(CANCELLER_ROLE, proposers[i]);
         }
 
-        // register executors
+        // register executors， 注册执行角色
         for (uint256 i = 0; i < executors.length; ++i) {
             _setupRole(EXECUTOR_ROLE, executors[i]);
         }
 
-        _minDelay = minDelay;
+        _minDelay = minDelay;//最小延迟
         emit MinDelayChange(0, minDelay);
     }
 
@@ -116,6 +122,7 @@ contract TimelockControllerUpgradeable is Initializable, AccessControlUpgradeabl
      * addition to checking the sender's role, `address(0)` 's role is also
      * considered. Granting a role to `address(0)` is equivalent to enabling
      * this role for everyone.
+     * 角色控制
      */
     modifier onlyRoleOrOpenRole(bytes32 role) {
         if (!hasRole(role, address(0))) {
@@ -126,6 +133,7 @@ contract TimelockControllerUpgradeable is Initializable, AccessControlUpgradeabl
 
     /**
      * @dev Contract might receive/hold ETH as part of the maintenance process.
+     * 接受eth
      */
     receive() external payable {}
 
@@ -139,11 +147,12 @@ contract TimelockControllerUpgradeable is Initializable, AccessControlUpgradeabl
     /**
      * @dev Returns whether an id correspond to a registered operation. This
      * includes both Pending, Ready and Done operations.
+     * 操作是否注册，包括 Pending, Ready and Done
      */
     function isOperation(bytes32 id) public view virtual returns (bool registered) {
         return getTimestamp(id) > 0;
     }
-
+    //操作状态
     /**
      * @dev Returns whether an operation is pending or not.
      */
@@ -186,6 +195,7 @@ contract TimelockControllerUpgradeable is Initializable, AccessControlUpgradeabl
     /**
      * @dev Returns the identifier of an operation containing a single
      * transaction.
+     * 包含交易的操作hash
      */
     function hashOperation(
         address target,
@@ -200,6 +210,7 @@ contract TimelockControllerUpgradeable is Initializable, AccessControlUpgradeabl
     /**
      * @dev Returns the identifier of an operation containing a batch of
      * transactions.
+     包含交易的操作hash
      */
     function hashOperationBatch(
         address[] calldata targets,
@@ -228,7 +239,9 @@ contract TimelockControllerUpgradeable is Initializable, AccessControlUpgradeabl
         bytes32 salt,
         uint256 delay
     ) public virtual onlyRole(PROPOSER_ROLE) {
+        //获取操作hash
         bytes32 id = hashOperation(target, value, data, predecessor, salt);
+        //调度
         _schedule(id, delay);
         emit CallScheduled(id, 0, target, value, data, predecessor, delay);
     }
@@ -241,6 +254,7 @@ contract TimelockControllerUpgradeable is Initializable, AccessControlUpgradeabl
      * Requirements:
      *
      * - the caller must have the 'proposer' role.
+     调度批量模式
      */
     function scheduleBatch(
         address[] calldata targets,
@@ -264,14 +278,16 @@ contract TimelockControllerUpgradeable is Initializable, AccessControlUpgradeabl
      * @dev Schedule an operation that is to becomes valid after a given delay.
      */
     function _schedule(bytes32 id, uint256 delay) private {
+        //确保操作存在，且延迟大于最小延迟
         require(!isOperation(id), "TimelockController: operation already scheduled");
         require(delay >= getMinDelay(), "TimelockController: insufficient delay");
+        //记录操作调度时间戳
         _timestamps[id] = block.timestamp + delay;
     }
 
     /**
      * @dev Cancel an operation.
-     *
+     * 取消操作
      * Requirements:
      *
      * - the caller must have the 'canceller' role.
@@ -289,7 +305,7 @@ contract TimelockControllerUpgradeable is Initializable, AccessControlUpgradeabl
      * Emits a {CallExecuted} event.
      *
      * Requirements:
-     *
+     * 执行操作
      * - the caller must have the 'executor' role.
      */
     // This function can reenter, but it doesn't pose a risk because _afterCall checks that the proposal is pending,
@@ -316,7 +332,7 @@ contract TimelockControllerUpgradeable is Initializable, AccessControlUpgradeabl
      * Emits one {CallExecuted} event per transaction in the batch.
      *
      * Requirements:
-     *
+     * 执行操作
      * - the caller must have the 'executor' role.
      */
     function executeBatch(
@@ -358,6 +374,7 @@ contract TimelockControllerUpgradeable is Initializable, AccessControlUpgradeabl
      * @dev Checks before execution of an operation's calls.
      */
     function _beforeCall(bytes32 id, bytes32 predecessor) private view {
+        //确保处于就绪状态,先前的操作已经结束
         require(isOperationReady(id), "TimelockController: operation is not ready");
         require(predecessor == bytes32(0) || isOperationDone(predecessor), "TimelockController: missing dependency");
     }
@@ -366,7 +383,9 @@ contract TimelockControllerUpgradeable is Initializable, AccessControlUpgradeabl
      * @dev Checks after execution of an operation's calls.
      */
     function _afterCall(bytes32 id) private {
+        //确保操作继续
         require(isOperationReady(id), "TimelockController: operation is not ready");
+        //操作执行结束
         _timestamps[id] = _DONE_TIMESTAMP;
     }
 
@@ -376,7 +395,7 @@ contract TimelockControllerUpgradeable is Initializable, AccessControlUpgradeabl
      * Emits a {MinDelayChange} event.
      *
      * Requirements:
-     *
+     * 更新最小延迟
      * - the caller must be the timelock itself. This can only be achieved by scheduling and later executing
      * an operation where the timelock is the target and the data is the ABI-encoded call to this function.
      */

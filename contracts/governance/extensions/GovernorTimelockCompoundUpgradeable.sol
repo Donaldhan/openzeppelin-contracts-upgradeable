@@ -14,7 +14,7 @@ import "../../proxy/utils/Initializable.sol";
  * the external timelock to all successful proposal (in addition to the voting duration). The {Governor} needs to be
  * the admin of the timelock for any operation to be performed. A public, unrestricted,
  * {GovernorTimelockCompound-__acceptAdmin} is available to accept ownership of the timelock.
- *
+ * 绑定执行过程到 Compound Timelock的Governor拓展
  * Using this model means the proposal will be operated by the {TimelockController} and not by the {Governor}. Thus,
  * the assets and permissions must be attached to the {TimelockController}. Any asset sent to the {Governor} will be
  * inaccessible.
@@ -25,13 +25,13 @@ abstract contract GovernorTimelockCompoundUpgradeable is Initializable, IGoverno
     using SafeCastUpgradeable for uint256;
     using TimersUpgradeable for TimersUpgradeable.Timestamp;
 
-    struct ProposalTimelock {
+    struct ProposalTimelock {//提案时钟
         TimersUpgradeable.Timestamp timer;
     }
 
-    ICompoundTimelockUpgradeable private _timelock;
+    ICompoundTimelockUpgradeable private _timelock;//Compound基于时钟的提案执行调度器
 
-    mapping(uint256 => ProposalTimelock) private _proposalTimelocks;
+    mapping(uint256 => ProposalTimelock) private _proposalTimelocks;//提案截止时间
 
     /**
      * @dev Emitted when the timelock controller used for proposal execution is modified.
@@ -70,9 +70,9 @@ abstract contract GovernorTimelockCompoundUpgradeable is Initializable, IGoverno
         if (eta == 0) {
             return status;
         } else if (block.timestamp >= eta + _timelock.GRACE_PERIOD()) {
-            return ProposalState.Expired;
+            return ProposalState.Expired;//过期
         } else {
-            return ProposalState.Queued;
+            return ProposalState.Queued;//待执行
         }
     }
 
@@ -85,6 +85,7 @@ abstract contract GovernorTimelockCompoundUpgradeable is Initializable, IGoverno
 
     /**
      * @dev Public accessor to check the eta of a queued proposal
+     * 提案截止时间
      */
     function proposalEta(uint256 proposalId) public view virtual override returns (uint256) {
         return _proposalTimelocks[proposalId].timer.getDeadline();
@@ -92,6 +93,7 @@ abstract contract GovernorTimelockCompoundUpgradeable is Initializable, IGoverno
 
     /**
      * @dev Function to queue a proposal to the timelock.
+     * 成功提案队列
      */
     function queue(
         address[] memory targets,
@@ -120,6 +122,7 @@ abstract contract GovernorTimelockCompoundUpgradeable is Initializable, IGoverno
 
     /**
      * @dev Overridden execute function that run the already queued proposal through the timelock.
+     * 执行提案
      */
     function _execute(
         uint256 proposalId,
@@ -139,6 +142,7 @@ abstract contract GovernorTimelockCompoundUpgradeable is Initializable, IGoverno
     /**
      * @dev Overridden version of the {Governor-_cancel} function to cancel the timelocked proposal if it as already
      * been queued.
+     * 取消提案
      */
     function _cancel(
         address[] memory targets,

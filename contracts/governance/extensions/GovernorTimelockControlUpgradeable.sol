@@ -12,7 +12,7 @@ import "../../proxy/utils/Initializable.sol";
  * @dev Extension of {Governor} that binds the execution process to an instance of {TimelockController}. This adds a
  * delay, enforced by the {TimelockController} to all successful proposal (in addition to the voting duration). The
  * {Governor} needs the proposer (and ideally the executor) roles for the {Governor} to work properly.
- *
+ * 基于TimeLock的提案调度器
  * Using this model means the proposal will be operated by the {TimelockController} and not by the {Governor}. Thus,
  * the assets and permissions must be attached to the {TimelockController}. Any asset sent to the {Governor} will be
  * inaccessible.
@@ -25,11 +25,12 @@ import "../../proxy/utils/Initializable.sol";
  * _Available since v4.3._
  */
 abstract contract GovernorTimelockControlUpgradeable is Initializable, IGovernorTimelockUpgradeable, GovernorUpgradeable {
-    TimelockControllerUpgradeable private _timelock;
+    TimelockControllerUpgradeable private _timelock;//调度控制器
     mapping(uint256 => bytes32) private _timelockIds;
 
     /**
      * @dev Emitted when the timelock controller used for proposal execution is modified.
+     * 调度控制器变更
      */
     event TimelockChange(address oldTimelock, address newTimelock);
 
@@ -53,6 +54,7 @@ abstract contract GovernorTimelockControlUpgradeable is Initializable, IGovernor
 
     /**
      * @dev Overridden version of the {Governor-state} function with added support for the `Queued` status.
+     * 提案状态
      */
     function state(uint256 proposalId) public view virtual override(IGovernorUpgradeable, GovernorUpgradeable) returns (ProposalState) {
         ProposalState status = super.state(proposalId);
@@ -62,15 +64,16 @@ abstract contract GovernorTimelockControlUpgradeable is Initializable, IGovernor
         }
 
         // core tracks execution, so we just have to check if successful proposal have been queued.
+        // 缓存成功的提案
         bytes32 queueid = _timelockIds[proposalId];
-        if (queueid == bytes32(0)) {
+        if (queueid == bytes32(0)) {//没有缓存
             return status;
         } else if (_timelock.isOperationDone(queueid)) {
-            return ProposalState.Executed;
+            return ProposalState.Executed; //提案已执行
         } else if (_timelock.isOperationPending(queueid)) {
-            return ProposalState.Queued;
+            return ProposalState.Queued;//pending，状态，待执行
         } else {
-            return ProposalState.Canceled;
+            return ProposalState.Canceled;//已取消
         }
     }
 
@@ -83,6 +86,8 @@ abstract contract GovernorTimelockControlUpgradeable is Initializable, IGovernor
 
     /**
      * @dev Public accessor to check the eta of a queued proposal
+     * 预计到达时间(Estimated Time Of Arrival)；
+     * 返回操作预计调度的时间，结束，则为0
      */
     function proposalEta(uint256 proposalId) public view virtual override returns (uint256) {
         uint256 eta = _timelock.getTimestamp(_timelockIds[proposalId]);
@@ -91,6 +96,7 @@ abstract contract GovernorTimelockControlUpgradeable is Initializable, IGovernor
 
     /**
      * @dev Function to queue a proposal to the timelock.
+     * 添加成功的提案到队列
      */
     function queue(
         address[] memory targets,
@@ -99,11 +105,12 @@ abstract contract GovernorTimelockControlUpgradeable is Initializable, IGovernor
         bytes32 descriptionHash
     ) public virtual override returns (uint256) {
         uint256 proposalId = hashProposal(targets, values, calldatas, descriptionHash);
-
+        
         require(state(proposalId) == ProposalState.Succeeded, "Governor: proposal not successful");
 
         uint256 delay = _timelock.getMinDelay();
         _timelockIds[proposalId] = _timelock.hashOperationBatch(targets, values, calldatas, 0, descriptionHash);
+        //调度提案操作
         _timelock.scheduleBatch(targets, values, calldatas, 0, descriptionHash, delay);
 
         emit ProposalQueued(proposalId, block.timestamp + delay);
@@ -113,6 +120,7 @@ abstract contract GovernorTimelockControlUpgradeable is Initializable, IGovernor
 
     /**
      * @dev Overridden execute function that run the already queued proposal through the timelock.
+     * 执行操作
      */
     function _execute(
         uint256, /* proposalId */
@@ -127,7 +135,8 @@ abstract contract GovernorTimelockControlUpgradeable is Initializable, IGovernor
     /**
      * @dev Overridden version of the {Governor-_cancel} function to cancel the timelocked proposal if it as already
      * been queued.
-     */
+     * 取消提案
+     */ 
     // This function can reenter through the external call to the timelock, but we assume the timelock is trusted and
     // well behaved (according to TimelockController) and this will not happen.
     // slither-disable-next-line reentrancy-no-eth
@@ -149,6 +158,7 @@ abstract contract GovernorTimelockControlUpgradeable is Initializable, IGovernor
 
     /**
      * @dev Address through which the governor executes action. In this case, the timelock.
+     * 返回执行器
      */
     function _executor() internal view virtual override returns (address) {
         return address(_timelock);
@@ -157,7 +167,7 @@ abstract contract GovernorTimelockControlUpgradeable is Initializable, IGovernor
     /**
      * @dev Public endpoint to update the underlying timelock instance. Restricted to the timelock itself, so updates
      * must be proposed, scheduled, and executed through governance proposals.
-     *
+     * 更新基于时间的提案调度器
      * CAUTION: It is not recommended to change the timelock while there are other queued governance proposals.
      */
     function updateTimelock(TimelockControllerUpgradeable newTimelock) external virtual onlyGovernance {
