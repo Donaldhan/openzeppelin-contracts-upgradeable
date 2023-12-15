@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v4.6.0) (token/common/ERC2981.sol)
+// OpenZeppelin Contracts (last updated v5.0.0) (token/common/ERC2981.sol)
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
-import "../../interfaces/IERC2981Upgradeable.sol";
-import "../../utils/introspection/ERC165Upgradeable.sol";
-import "../../proxy/utils/Initializable.sol";
+import {IERC2981} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {ERC165Upgradeable} from "../../utils/introspection/ERC165Upgradeable.sol";
+import {Initializable} from "../../proxy/utils/Initializable.sol";
 
 /**
  * @dev Implementation of the NFT Royalty Standard, a standardized way to retrieve royalty payment information.
@@ -17,46 +18,74 @@ import "../../proxy/utils/Initializable.sol";
  * fee is specified in basis points by default.
  *
  * IMPORTANT: ERC-2981 only specifies a way to signal royalty information and does not enforce its payment. See
- * https://eips.ethereum.org/EIPS/eip-2981#optional-royalty-payments[Rationale] in the EIP. Marketplaces are expected to
+ * https://eips.ethereum.org/EIPS/eip-2981#optional-royalty-payments[Rationale] in the ERC. Marketplaces are expected to
  * voluntarily pay royalties together with sales, but note that this standard is not yet widely supported.
- * 比如那些创作者，因为NFT给创作者带来全新的可能性，不同于版权或水印，NFT 是互联网原生的，出生在互联网上，
- * 其最大意义在于可以实现标准化的、互操作的、可编程的数字资产。
- * 如基于以太坊 EIP-2981 标准的智能合约可以将 NFT 后续每次销售收入的一部分（一般是 10%）自动分配给创作者，从而让创作者可以从二级市场中分享收益。
- * 而最愿意接纳这些创作者的就是那些品牌主，因为很多品牌主正在通过NFT进行新的品牌故事和品牌营销，而IP创作则决定了NFT的天花板。
- * _Available since v4.5._
  */
-abstract contract ERC2981Upgradeable is Initializable, IERC2981Upgradeable, ERC165Upgradeable {
+abstract contract ERC2981Upgradeable is Initializable, IERC2981, ERC165Upgradeable {
+    struct RoyaltyInfo {
+        address receiver;
+        uint96 royaltyFraction;
+    }
+
+    /// @custom:storage-location erc7201:openzeppelin.storage.ERC2981
+    struct ERC2981Storage {
+        RoyaltyInfo _defaultRoyaltyInfo;
+        mapping(uint256 tokenId => RoyaltyInfo) _tokenRoyaltyInfo;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.ERC2981")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant ERC2981StorageLocation = 0xdaedc9ab023613a7caf35e703657e986ccfad7e3eb0af93a2853f8d65dd86b00;
+
+    function _getERC2981Storage() private pure returns (ERC2981Storage storage $) {
+        assembly {
+            $.slot := ERC2981StorageLocation
+        }
+    }
+
+    /**
+     * @dev The default royalty set is invalid (eg. (numerator / denominator) >= 1).
+     */
+    error ERC2981InvalidDefaultRoyalty(uint256 numerator, uint256 denominator);
+
+    /**
+     * @dev The default royalty receiver is invalid.
+     */
+    error ERC2981InvalidDefaultRoyaltyReceiver(address receiver);
+
+    /**
+     * @dev The royalty set for an specific `tokenId` is invalid (eg. (numerator / denominator) >= 1).
+     */
+    error ERC2981InvalidTokenRoyalty(uint256 tokenId, uint256 numerator, uint256 denominator);
+
+    /**
+     * @dev The royalty receiver for `tokenId` is invalid.
+     */
+    error ERC2981InvalidTokenRoyaltyReceiver(uint256 tokenId, address receiver);
+
     function __ERC2981_init() internal onlyInitializing {
     }
 
     function __ERC2981_init_unchained() internal onlyInitializing {
     }
-    struct RoyaltyInfo {
-        address receiver;
-        uint96 royaltyFraction; //版税分子，版税分母_feeDenominator
-    }
-
-    RoyaltyInfo private _defaultRoyaltyInfo;//默认版税信息
-    mapping(uint256 => RoyaltyInfo) private _tokenRoyaltyInfo;
-
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165Upgradeable, ERC165Upgradeable) returns (bool) {
-        return interfaceId == type(IERC2981Upgradeable).interfaceId || super.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, ERC165Upgradeable) returns (bool) {
+        return interfaceId == type(IERC2981).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /**
-     * @inheritdoc IERC2981Upgradeable
+     * @inheritdoc IERC2981
      */
-    function royaltyInfo(uint256 _tokenId, uint256 _salePrice) public view virtual override returns (address, uint256) {
-        RoyaltyInfo memory royalty = _tokenRoyaltyInfo[_tokenId];
+    function royaltyInfo(uint256 tokenId, uint256 salePrice) public view virtual returns (address, uint256) {
+        ERC2981Storage storage $ = _getERC2981Storage();
+        RoyaltyInfo memory royalty = $._tokenRoyaltyInfo[tokenId];
 
         if (royalty.receiver == address(0)) {
-            royalty = _defaultRoyaltyInfo;
+            royalty = $._defaultRoyaltyInfo;
         }
-        //抽成
-        uint256 royaltyAmount = (_salePrice * royalty.royaltyFraction) / _feeDenominator();
+
+        uint256 royaltyAmount = (salePrice * royalty.royaltyFraction) / _feeDenominator();
 
         return (royalty.receiver, royaltyAmount);
     }
@@ -72,57 +101,61 @@ abstract contract ERC2981Upgradeable is Initializable, IERC2981Upgradeable, ERC1
 
     /**
      * @dev Sets the royalty information that all ids in this contract will default to.
-     * 设置默认版税
+     *
      * Requirements:
      *
      * - `receiver` cannot be the zero address.
-     * - `feeNumerator` cannot be greater than the fee denominator. ，不能大于版税费用的分母
+     * - `feeNumerator` cannot be greater than the fee denominator.
      */
     function _setDefaultRoyalty(address receiver, uint96 feeNumerator) internal virtual {
-        require(feeNumerator <= _feeDenominator(), "ERC2981: royalty fee will exceed salePrice");
-        require(receiver != address(0), "ERC2981: invalid receiver");
+        ERC2981Storage storage $ = _getERC2981Storage();
+        uint256 denominator = _feeDenominator();
+        if (feeNumerator > denominator) {
+            // Royalty fee will exceed the sale price
+            revert ERC2981InvalidDefaultRoyalty(feeNumerator, denominator);
+        }
+        if (receiver == address(0)) {
+            revert ERC2981InvalidDefaultRoyaltyReceiver(address(0));
+        }
 
-        _defaultRoyaltyInfo = RoyaltyInfo(receiver, feeNumerator);
+        $._defaultRoyaltyInfo = RoyaltyInfo(receiver, feeNumerator);
     }
 
     /**
      * @dev Removes default royalty information.
      */
     function _deleteDefaultRoyalty() internal virtual {
-        delete _defaultRoyaltyInfo;
+        ERC2981Storage storage $ = _getERC2981Storage();
+        delete $._defaultRoyaltyInfo;
     }
 
     /**
      * @dev Sets the royalty information for a specific token id, overriding the global default.
-     * 设置接受地址的版税
+     *
      * Requirements:
      *
      * - `receiver` cannot be the zero address.
      * - `feeNumerator` cannot be greater than the fee denominator.
      */
-    function _setTokenRoyalty(
-        uint256 tokenId,
-        address receiver,
-        uint96 feeNumerator
-    ) internal virtual {
-        require(feeNumerator <= _feeDenominator(), "ERC2981: royalty fee will exceed salePrice");
-        require(receiver != address(0), "ERC2981: Invalid parameters");
+    function _setTokenRoyalty(uint256 tokenId, address receiver, uint96 feeNumerator) internal virtual {
+        ERC2981Storage storage $ = _getERC2981Storage();
+        uint256 denominator = _feeDenominator();
+        if (feeNumerator > denominator) {
+            // Royalty fee will exceed the sale price
+            revert ERC2981InvalidTokenRoyalty(tokenId, feeNumerator, denominator);
+        }
+        if (receiver == address(0)) {
+            revert ERC2981InvalidTokenRoyaltyReceiver(tokenId, address(0));
+        }
 
-        _tokenRoyaltyInfo[tokenId] = RoyaltyInfo(receiver, feeNumerator);
+        $._tokenRoyaltyInfo[tokenId] = RoyaltyInfo(receiver, feeNumerator);
     }
 
     /**
      * @dev Resets royalty information for the token id back to the global default.
-     * 重置版税
      */
     function _resetTokenRoyalty(uint256 tokenId) internal virtual {
-        delete _tokenRoyaltyInfo[tokenId];
+        ERC2981Storage storage $ = _getERC2981Storage();
+        delete $._tokenRoyaltyInfo[tokenId];
     }
-
-    /**
-     * @dev This empty reserved space is put in place to allow future versions to add new
-     * variables without shifting down storage in the inheritance chain.
-     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-     */
-    uint256[48] private __gap;
 }

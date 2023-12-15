@@ -1,36 +1,50 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v4.6.0) (governance/extensions/GovernorTimelockControl.sol)
+// OpenZeppelin Contracts (last updated v5.0.0) (governance/extensions/GovernorTimelockControl.sol)
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
-import "./IGovernorTimelockUpgradeable.sol";
-import "../GovernorUpgradeable.sol";
-import "../TimelockControllerUpgradeable.sol";
-import "../../proxy/utils/Initializable.sol";
+import {IGovernor} from "@openzeppelin/contracts/governance/IGovernor.sol";
+import {GovernorUpgradeable} from "../GovernorUpgradeable.sol";
+import {TimelockControllerUpgradeable} from "../TimelockControllerUpgradeable.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {Initializable} from "../../proxy/utils/Initializable.sol";
 
 /**
  * @dev Extension of {Governor} that binds the execution process to an instance of {TimelockController}. This adds a
  * delay, enforced by the {TimelockController} to all successful proposal (in addition to the voting duration). The
  * {Governor} needs the proposer (and ideally the executor) roles for the {Governor} to work properly.
- * 基于TimeLock的提案调度器
+ *
  * Using this model means the proposal will be operated by the {TimelockController} and not by the {Governor}. Thus,
  * the assets and permissions must be attached to the {TimelockController}. Any asset sent to the {Governor} will be
- * inaccessible.
+ * inaccessible from a proposal, unless executed via {Governor-relay}.
  *
- * WARNING: Setting up the TimelockController to have additional proposers besides the governor is very risky, as it
- * grants them powers that they must be trusted or known not to use: 1) {onlyGovernance} functions like {relay} are
- * available to them through the timelock, and 2) approved governance proposals can be blocked by them, effectively
- * executing a Denial of Service attack. This risk will be mitigated in a future release.
+ * WARNING: Setting up the TimelockController to have additional proposers or cancellers besides the governor is very
+ * risky, as it grants them the ability to: 1) execute operations as the timelock, and thus possibly performing
+ * operations or accessing funds that are expected to only be accessible through a vote, and 2) block governance
+ * proposals that have been approved by the voters, effectively executing a Denial of Service attack.
  *
- * _Available since v4.3._
+ * NOTE: `AccessManager` does not support scheduling more than one operation with the same target and calldata at
+ * the same time. See {AccessManager-schedule} for a workaround.
  */
-abstract contract GovernorTimelockControlUpgradeable is Initializable, IGovernorTimelockUpgradeable, GovernorUpgradeable {
-    TimelockControllerUpgradeable private _timelock;//调度控制器
-    mapping(uint256 => bytes32) private _timelockIds;
+abstract contract GovernorTimelockControlUpgradeable is Initializable, GovernorUpgradeable {
+    /// @custom:storage-location erc7201:openzeppelin.storage.GovernorTimelockControl
+    struct GovernorTimelockControlStorage {
+        TimelockControllerUpgradeable _timelock;
+        mapping(uint256 proposalId => bytes32) _timelockIds;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.GovernorTimelockControl")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant GovernorTimelockControlStorageLocation = 0x0d5829787b8befdbc6044ef7457d8a95c2a04bc99235349f1a212c063e59d400;
+
+    function _getGovernorTimelockControlStorage() private pure returns (GovernorTimelockControlStorage storage $) {
+        assembly {
+            $.slot := GovernorTimelockControlStorageLocation
+        }
+    }
 
     /**
      * @dev Emitted when the timelock controller used for proposal execution is modified.
-     * 调度控制器变更
      */
     event TimelockChange(address oldTimelock, address newTimelock);
 
@@ -46,97 +60,85 @@ abstract contract GovernorTimelockControlUpgradeable is Initializable, IGovernor
     }
 
     /**
-     * @dev See {IERC165-supportsInterface}.
+     * @dev Overridden version of the {Governor-state} function that considers the status reported by the timelock.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165Upgradeable, GovernorUpgradeable) returns (bool) {
-        return interfaceId == type(IGovernorTimelockUpgradeable).interfaceId || super.supportsInterface(interfaceId);
-    }
+    function state(uint256 proposalId) public view virtual override returns (ProposalState) {
+        GovernorTimelockControlStorage storage $ = _getGovernorTimelockControlStorage();
+        ProposalState currentState = super.state(proposalId);
 
-    /**
-     * @dev Overridden version of the {Governor-state} function with added support for the `Queued` status.
-     * 提案状态
-     */
-    function state(uint256 proposalId) public view virtual override(IGovernorUpgradeable, GovernorUpgradeable) returns (ProposalState) {
-        ProposalState status = super.state(proposalId);
-
-        if (status != ProposalState.Succeeded) {
-            return status;
+        if (currentState != ProposalState.Queued) {
+            return currentState;
         }
 
-        // core tracks execution, so we just have to check if successful proposal have been queued.
-        // 缓存成功的提案
-        bytes32 queueid = _timelockIds[proposalId];
-        if (queueid == bytes32(0)) {//没有缓存
-            return status;
-        } else if (_timelock.isOperationDone(queueid)) {
-            return ProposalState.Executed; //提案已执行
-        } else if (_timelock.isOperationPending(queueid)) {
-            return ProposalState.Queued;//pending，状态，待执行
+        bytes32 queueid = $._timelockIds[proposalId];
+        if ($._timelock.isOperationPending(queueid)) {
+            return ProposalState.Queued;
+        } else if ($._timelock.isOperationDone(queueid)) {
+            // This can happen if the proposal is executed directly on the timelock.
+            return ProposalState.Executed;
         } else {
-            return ProposalState.Canceled;//已取消
+            // This can happen if the proposal is canceled directly on the timelock.
+            return ProposalState.Canceled;
         }
     }
 
     /**
      * @dev Public accessor to check the address of the timelock
      */
-    function timelock() public view virtual override returns (address) {
-        return address(_timelock);
+    function timelock() public view virtual returns (address) {
+        GovernorTimelockControlStorage storage $ = _getGovernorTimelockControlStorage();
+        return address($._timelock);
     }
 
     /**
-     * @dev Public accessor to check the eta of a queued proposal
-     * 预计到达时间(Estimated Time Of Arrival)；
-     * 返回操作预计调度的时间，结束，则为0
+     * @dev See {IGovernor-proposalNeedsQueuing}.
      */
-    function proposalEta(uint256 proposalId) public view virtual override returns (uint256) {
-        uint256 eta = _timelock.getTimestamp(_timelockIds[proposalId]);
-        return eta == 1 ? 0 : eta; // _DONE_TIMESTAMP (1) should be replaced with a 0 value
+    function proposalNeedsQueuing(uint256) public view virtual override returns (bool) {
+        return true;
     }
 
     /**
      * @dev Function to queue a proposal to the timelock.
-     * 添加成功的提案到队列
      */
-    function queue(
+    function _queueOperations(
+        uint256 proposalId,
         address[] memory targets,
         uint256[] memory values,
         bytes[] memory calldatas,
         bytes32 descriptionHash
-    ) public virtual override returns (uint256) {
-        uint256 proposalId = hashProposal(targets, values, calldatas, descriptionHash);
-        
-        require(state(proposalId) == ProposalState.Succeeded, "Governor: proposal not successful");
+    ) internal virtual override returns (uint48) {
+        GovernorTimelockControlStorage storage $ = _getGovernorTimelockControlStorage();
+        uint256 delay = $._timelock.getMinDelay();
 
-        uint256 delay = _timelock.getMinDelay();
-        _timelockIds[proposalId] = _timelock.hashOperationBatch(targets, values, calldatas, 0, descriptionHash);
-        //调度提案操作
-        _timelock.scheduleBatch(targets, values, calldatas, 0, descriptionHash, delay);
+        bytes32 salt = _timelockSalt(descriptionHash);
+        $._timelockIds[proposalId] = $._timelock.hashOperationBatch(targets, values, calldatas, 0, salt);
+        $._timelock.scheduleBatch(targets, values, calldatas, 0, salt, delay);
 
-        emit ProposalQueued(proposalId, block.timestamp + delay);
-
-        return proposalId;
+        return SafeCast.toUint48(block.timestamp + delay);
     }
 
     /**
-     * @dev Overridden execute function that run the already queued proposal through the timelock.
-     * 执行操作
+     * @dev Overridden version of the {Governor-_executeOperations} function that runs the already queued proposal
+     * through the timelock.
      */
-    function _execute(
-        uint256, /* proposalId */
+    function _executeOperations(
+        uint256 proposalId,
         address[] memory targets,
         uint256[] memory values,
         bytes[] memory calldatas,
         bytes32 descriptionHash
     ) internal virtual override {
-        _timelock.executeBatch{value: msg.value}(targets, values, calldatas, 0, descriptionHash);
+        GovernorTimelockControlStorage storage $ = _getGovernorTimelockControlStorage();
+        // execute
+        $._timelock.executeBatch{value: msg.value}(targets, values, calldatas, 0, _timelockSalt(descriptionHash));
+        // cleanup for refund
+        delete $._timelockIds[proposalId];
     }
 
     /**
-     * @dev Overridden version of the {Governor-_cancel} function to cancel the timelocked proposal if it as already
+     * @dev Overridden version of the {Governor-_cancel} function to cancel the timelocked proposal if it has already
      * been queued.
-     * 取消提案
-     */ 
+     */
     // This function can reenter through the external call to the timelock, but we assume the timelock is trusted and
     // well behaved (according to TimelockController) and this will not happen.
     // slither-disable-next-line reentrancy-no-eth
@@ -146,11 +148,15 @@ abstract contract GovernorTimelockControlUpgradeable is Initializable, IGovernor
         bytes[] memory calldatas,
         bytes32 descriptionHash
     ) internal virtual override returns (uint256) {
+        GovernorTimelockControlStorage storage $ = _getGovernorTimelockControlStorage();
         uint256 proposalId = super._cancel(targets, values, calldatas, descriptionHash);
 
-        if (_timelockIds[proposalId] != 0) {
-            _timelock.cancel(_timelockIds[proposalId]);
-            delete _timelockIds[proposalId];
+        bytes32 timelockId = $._timelockIds[proposalId];
+        if (timelockId != 0) {
+            // cancel
+            $._timelock.cancel(timelockId);
+            // cleanup
+            delete $._timelockIds[proposalId];
         }
 
         return proposalId;
@@ -158,16 +164,16 @@ abstract contract GovernorTimelockControlUpgradeable is Initializable, IGovernor
 
     /**
      * @dev Address through which the governor executes action. In this case, the timelock.
-     * 返回执行器
      */
     function _executor() internal view virtual override returns (address) {
-        return address(_timelock);
+        GovernorTimelockControlStorage storage $ = _getGovernorTimelockControlStorage();
+        return address($._timelock);
     }
 
     /**
      * @dev Public endpoint to update the underlying timelock instance. Restricted to the timelock itself, so updates
      * must be proposed, scheduled, and executed through governance proposals.
-     * 更新基于时间的提案调度器
+     *
      * CAUTION: It is not recommended to change the timelock while there are other queued governance proposals.
      */
     function updateTimelock(TimelockControllerUpgradeable newTimelock) external virtual onlyGovernance {
@@ -175,14 +181,18 @@ abstract contract GovernorTimelockControlUpgradeable is Initializable, IGovernor
     }
 
     function _updateTimelock(TimelockControllerUpgradeable newTimelock) private {
-        emit TimelockChange(address(_timelock), address(newTimelock));
-        _timelock = newTimelock;
+        GovernorTimelockControlStorage storage $ = _getGovernorTimelockControlStorage();
+        emit TimelockChange(address($._timelock), address(newTimelock));
+        $._timelock = newTimelock;
     }
 
     /**
-     * @dev This empty reserved space is put in place to allow future versions to add new
-     * variables without shifting down storage in the inheritance chain.
-     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     * @dev Computes the {TimelockController} operation salt.
+     *
+     * It is computed with the governor address itself to avoid collisions across governor instances using the
+     * same timelock.
      */
-    uint256[48] private __gap;
+    function _timelockSalt(bytes32 descriptionHash) private view returns (bytes32) {
+        return bytes20(address(this)) ^ descriptionHash;
+    }
 }

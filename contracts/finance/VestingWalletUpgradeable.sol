@@ -1,129 +1,156 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v4.6.0) (finance/VestingWallet.sol)
-pragma solidity ^0.8.0;
+// OpenZeppelin Contracts (last updated v5.0.0) (finance/VestingWallet.sol)
+pragma solidity ^0.8.20;
 
-import "../token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "../utils/AddressUpgradeable.sol";
-import "../utils/ContextUpgradeable.sol";
-import "../utils/math/MathUpgradeable.sol";
-import "../proxy/utils/Initializable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {ContextUpgradeable} from "../utils/ContextUpgradeable.sol";
+import {OwnableUpgradeable} from "../access/OwnableUpgradeable.sol";
+import {Initializable} from "../proxy/utils/Initializable.sol";
 
 /**
- * @title VestingWallet  受益人钱包
- * @dev This contract handles the vesting of Eth and ERC20 tokens for a given beneficiary. Custody of multiple tokens
- * can be given to this contract, which will release the token to the beneficiary following a given vesting schedule.
- * The vesting schedule is customizable through the {vestedAmount} function.
- * 处理给定受益人地址的eth和erc20收益
- * Any token transferred to this contract will follow the vesting schedule as if they were locked from the beginning.
+ * @dev A vesting wallet is an ownable contract that can receive native currency and ERC-20 tokens, and release these
+ * assets to the wallet owner, also referred to as "beneficiary", according to a vesting schedule.
+ *
+ * Any assets transferred to this contract will follow the vesting schedule as if they were locked from the beginning.
  * Consequently, if the vesting has already started, any amount of tokens sent to this contract will (at least partly)
  * be immediately releasable.
- *  该合约处理给定受益人的 Eth 和 ERC20 代币的归属。该合约可以托管多个代币，这将按照给定的归属时间表将代币释放给受益人。
- *  归属时间表可通过该vestedAmount功能进行自定义。任何转移到该合约的代币都将遵循归属时间表，就好像它们从一开始就被锁定一样。
- *  因此，如果归属已经开始，发送到该合约的任何数量的代币都将（至少部分）立即释放。
- * @custom:storage-size 52
+ *
+ * By setting the duration to 0, one can configure this contract to behave like an asset timelock that hold tokens for
+ * a beneficiary until a specified time.
+ *
+ * NOTE: Since the wallet is {Ownable}, and ownership can be transferred, it is possible to sell unvested tokens.
+ * Preventing this in a smart contract is difficult, considering that: 1) a beneficiary address could be a
+ * counterfactually deployed contract, 2) there is likely to be a migration path for EOAs to become contracts in the
+ * near future.
+ *
+ * NOTE: When using this contract with any token whose balance is adjusted automatically (i.e. a rebase token), make
+ * sure to account the supply/balance adjustment in the vesting schedule to ensure the vested amount is as intended.
  */
-contract VestingWalletUpgradeable is Initializable, ContextUpgradeable {
-    event EtherReleased(uint256 amount);//eth收款
-    event ERC20Released(address indexed token, uint256 amount);//20收款
+contract VestingWalletUpgradeable is Initializable, ContextUpgradeable, OwnableUpgradeable {
+    event EtherReleased(uint256 amount);
+    event ERC20Released(address indexed token, uint256 amount);
 
-    uint256 private _released;//eth余额
-    mapping(address => uint256) private _erc20Released;//20token的收益
-    address private _beneficiary;//受益人地址
-    uint64 private _start;//开始时间
-    uint64 private _duration;//持续时间
-
-    /**
-     * @dev Set the beneficiary, start timestamp and vesting duration of the vesting wallet.
-     */
-    function __VestingWallet_init(
-        address beneficiaryAddress,
-        uint64 startTimestamp,
-        uint64 durationSeconds
-    ) internal onlyInitializing {
-        __VestingWallet_init_unchained(beneficiaryAddress, startTimestamp, durationSeconds);
+    /// @custom:storage-location erc7201:openzeppelin.storage.VestingWallet
+    struct VestingWalletStorage {
+        uint256 _released;
+        mapping(address token => uint256) _erc20Released;
+        uint64 _start;
+        uint64 _duration;
     }
 
-    function __VestingWallet_init_unchained(
-        address beneficiaryAddress,
-        uint64 startTimestamp,
-        uint64 durationSeconds
-    ) internal onlyInitializing {
-        require(beneficiaryAddress != address(0), "VestingWallet: beneficiary is zero address");
-        _beneficiary = beneficiaryAddress;
-        _start = startTimestamp;
-        _duration = durationSeconds;
+    // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.VestingWallet")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant VestingWalletStorageLocation = 0xa1eac494560f7591e4da38ed031587f09556afdfc4399dd2e205b935fdfa3900;
+
+    function _getVestingWalletStorage() private pure returns (VestingWalletStorage storage $) {
+        assembly {
+            $.slot := VestingWalletStorageLocation
+        }
+    }
+
+    /**
+     * @dev Sets the sender as the initial owner, the beneficiary as the pending owner, the start timestamp and the
+     * vesting duration of the vesting wallet.
+     */
+    function __VestingWallet_init(address beneficiary, uint64 startTimestamp, uint64 durationSeconds) internal onlyInitializing {
+        __Ownable_init_unchained(beneficiary);
+        __VestingWallet_init_unchained(beneficiary, startTimestamp, durationSeconds);
+    }
+
+    function __VestingWallet_init_unchained(address, uint64 startTimestamp, uint64 durationSeconds) internal onlyInitializing {
+        VestingWalletStorage storage $ = _getVestingWalletStorage();
+        $._start = startTimestamp;
+        $._duration = durationSeconds;
     }
 
     /**
      * @dev The contract should be able to receive Eth.
-     * 接收eth
      */
     receive() external payable virtual {}
 
     /**
-     * @dev Getter for the beneficiary address. 受益人地址
-     */
-    function beneficiary() public view virtual returns (address) {
-        return _beneficiary;
-    }
-
-    /**
-     * @dev Getter for the start timestamp. 开始时间
+     * @dev Getter for the start timestamp.
      */
     function start() public view virtual returns (uint256) {
-        return _start;
+        VestingWalletStorage storage $ = _getVestingWalletStorage();
+        return $._start;
     }
 
     /**
-     * @dev Getter for the vesting duration. 获取收益持久时间
+     * @dev Getter for the vesting duration.
      */
     function duration() public view virtual returns (uint256) {
-        return _duration;
+        VestingWalletStorage storage $ = _getVestingWalletStorage();
+        return $._duration;
     }
 
     /**
-     * @dev Amount of eth already released 已经收到的eth
+     * @dev Getter for the end timestamp.
+     */
+    function end() public view virtual returns (uint256) {
+        return start() + duration();
+    }
+
+    /**
+     * @dev Amount of eth already released
      */
     function released() public view virtual returns (uint256) {
-        return _released;
+        VestingWalletStorage storage $ = _getVestingWalletStorage();
+        return $._released;
     }
 
     /**
-     * @dev Amount of token already released 收到erc20对应的数量
+     * @dev Amount of token already released
      */
     function released(address token) public view virtual returns (uint256) {
-        return _erc20Released[token];
+        VestingWalletStorage storage $ = _getVestingWalletStorage();
+        return $._erc20Released[token];
+    }
+
+    /**
+     * @dev Getter for the amount of releasable eth.
+     */
+    function releasable() public view virtual returns (uint256) {
+        return vestedAmount(uint64(block.timestamp)) - released();
+    }
+
+    /**
+     * @dev Getter for the amount of releasable `token` tokens. `token` should be the address of an
+     * {IERC20} contract.
+     */
+    function releasable(address token) public view virtual returns (uint256) {
+        return vestedAmount(token, uint64(block.timestamp)) - released(token);
     }
 
     /**
      * @dev Release the native token (ether) that have already vested.
-     * 结算已经获得eth
+     *
      * Emits a {EtherReleased} event.
      */
     function release() public virtual {
-        uint256 releasable = vestedAmount(uint64(block.timestamp)) - released();
-        _released += releasable;
-        emit EtherReleased(releasable);
-        AddressUpgradeable.sendValue(payable(beneficiary()), releasable);
+        VestingWalletStorage storage $ = _getVestingWalletStorage();
+        uint256 amount = releasable();
+        $._released += amount;
+        emit EtherReleased(amount);
+        Address.sendValue(payable(owner()), amount);
     }
 
     /**
      * @dev Release the tokens that have already vested.
-     * 结算ERC20的收益
+     *
      * Emits a {ERC20Released} event.
      */
     function release(address token) public virtual {
-        //当前可获得的收益
-        uint256 releasable = vestedAmount(token, uint64(block.timestamp)) - released(token);
-        _erc20Released[token] += releasable;
-        emit ERC20Released(token, releasable);
-        //转账
-        SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(token), beneficiary(), releasable);
+        VestingWalletStorage storage $ = _getVestingWalletStorage();
+        uint256 amount = releasable(token);
+        $._erc20Released[token] += amount;
+        emit ERC20Released(token, amount);
+        SafeERC20.safeTransfer(IERC20(token), owner(), amount);
     }
 
     /**
      * @dev Calculates the amount of ether that has already vested. Default implementation is a linear vesting curve.
-     * 获取总投资收益
      */
     function vestedAmount(uint64 timestamp) public view virtual returns (uint256) {
         return _vestingSchedule(address(this).balance + released(), timestamp);
@@ -131,31 +158,22 @@ contract VestingWalletUpgradeable is Initializable, ContextUpgradeable {
 
     /**
      * @dev Calculates the amount of tokens that has already vested. Default implementation is a linear vesting curve.
-     * 获取
      */
     function vestedAmount(address token, uint64 timestamp) public view virtual returns (uint256) {
-        return _vestingSchedule(IERC20Upgradeable(token).balanceOf(address(this)) + released(token), timestamp);
+        return _vestingSchedule(IERC20(token).balanceOf(address(this)) + released(token), timestamp);
     }
 
     /**
      * @dev Virtual implementation of the vesting formula. This returns the amount vested, as a function of time, for
      * an asset given its total historical allocation.
-     * 根据开始时间，持续时间及总分配数量计算应得份额
      */
     function _vestingSchedule(uint256 totalAllocation, uint64 timestamp) internal view virtual returns (uint256) {
         if (timestamp < start()) {
             return 0;
-        } else if (timestamp > start() + duration()) {
+        } else if (timestamp >= end()) {
             return totalAllocation;
         } else {
             return (totalAllocation * (timestamp - start())) / duration();
         }
     }
-
-    /**
-     * @dev This empty reserved space is put in place to allow future versions to add new
-     * variables without shifting down storage in the inheritance chain.
-     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-     */
-    uint256[48] private __gap;
 }
